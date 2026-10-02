@@ -3,9 +3,10 @@
 Paste-ready text for the CurseForge (and Modrinth) project page. Short on purpose: it sells the mod
 and gets a player started; everything else - every option in detail, precision, compatibility - is in
 `README.md`, which the page links to as the full guide. Every claim here is something the mod does
-The banner and section headers are `docs/store-art/`, from `java tools/Banners.java`, linked from GitHub.
 today; check numbers against `VeinConfig.java` / `VeinRules.java` and `CHANGELOG.md` before changing
 one.
+
+The banner and section headers are `docs/store-art/`, from `java tools/Banners.java`, linked from GitHub.
 
 
 ## Summary
