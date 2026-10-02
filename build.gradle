@@ -1,15 +1,11 @@
 plugins {
     id 'java-library'
-    id 'idea'
     id 'net.neoforged.moddev' version '2.0.148'
 }
 
-version = mod_version
+version = "${mod_version}+${minecraft_version}"
 group = mod_group_id
-
-base {
-    archivesName = "${mod_id}-${minecraft_version}-neoforge"
-}
+base { archivesName = mod_id }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
@@ -36,25 +32,33 @@ neoForge {
     }
 }
 
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : mod_version,
             mod_authors            : mod_authors,
-            mod_description        : mod_description,
+            mod_description        : mod_description
     ]
     inputs.properties replaceProperties
     expand replaceProperties
-    from "src/main/templates"
-    into "build/generated/sources/modMetadata"
+    from 'src/main/templates'
+    into "${layout.buildDirectory.get()}/generated/sources/modMetadata"
 }
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
+
+// Both licences travel with the jar: a distributed artifact that does not carry its own terms
+// leaves a pack author guessing.
+tasks.named('jar', Jar) {
+    from(file('LICENSE')) { into 'META-INF' }
+    from(file('LICENSE-ASSETS')) { into 'META-INF' }
+}
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

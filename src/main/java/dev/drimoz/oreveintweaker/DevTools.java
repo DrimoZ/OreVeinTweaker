@@ -1,4 +1,4 @@
-package com.oreveinstripper;
+package dev.drimoz.oreveintweaker;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,7 +14,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.Tags;
+import com.mojang.logging.LogUtils;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +38,8 @@ public final class DevTools {
 
     // Vanilla vein block -> stats. Written from worldgen threads.
     private static final Map<Block, Stat> STATS = new ConcurrentHashMap<>();
+    // What actually went into the world, so ore_amount and friends can be checked against the counts.
+    private static final Map<String, LongAdder> PLACED = new ConcurrentHashMap<>();
 
     private static final class Stat {
         final LongAdder count = new LongAdder();
@@ -48,6 +54,49 @@ public final class DevTools {
         stat.count.increment();
         stat.placed = placed == null ? "REMOVED" : BuiltInRegistries.BLOCK.getKey(placed.getBlock()).toString();
         stat.lastPos = new BlockPos(x, y, z);
+        PLACED.computeIfAbsent(stat.placed, k -> new LongAdder()).increment();
+    }
+
+    /**
+     * Logs how often |vein_toggle| reaches each threshold over the vein heights. Vanilla's veins sit
+     * above 0.4, so this table is what turns "size = 2" into "about twice the vein volume".
+     */
+    static void measureToggle(ServerStartedEvent event) {
+        ServerLevel level = event.getServer().overworld();
+        DensityFunction toggle = level.getChunkSource().randomState().router().veinToggle();
+        RandomSource random = RandomSource.create(42);
+        double[] thresholds = new double[17];
+        long[] above = new long[thresholds.length];
+        for (int k = 0; k < thresholds.length; k++) thresholds[k] = 0.1 + k * 0.05;
+        int samples = 200_000;
+        // Vein volume per type, vanilla vs after this mod's resize: the ratio should read as `size`.
+        long copperVanilla = 0, copperResized = 0, ironVanilla = 0, ironResized = 0;
+        for (int i = 0; i < samples; i++) {
+            int x = random.nextInt(40_000) - 20_000;
+            int z = random.nextInt(40_000) - 20_000;
+            int y = -60 + random.nextInt(111);
+            double raw = toggle.compute(new DensityFunction.SinglePointContext(x, y, z));
+            double t = Math.abs(raw);
+            for (int k = 0; k < thresholds.length; k++) if (t >= thresholds[k]) above[k]++;
+            boolean resized = Math.abs(VeinRules.resizeToggle(raw)) >= 0.4;
+            if (raw > 0) {
+                if (t >= 0.4) copperVanilla++;
+                if (resized) copperResized++;
+            } else {
+                if (t >= 0.4) ironVanilla++;
+                if (resized) ironResized++;
+            }
+        }
+        LogUtils.getLogger().info(String.format(java.util.Locale.ROOT,
+                "[%s] vein volume vs vanilla with the current config: copper x%.2f, iron x%.2f",
+                OreVeinTweaker.MOD_ID, copperResized / (double) copperVanilla, ironResized / (double) ironVanilla));
+        StringBuilder table = new StringBuilder("[" + OreVeinTweaker.MOD_ID + "] |vein_toggle| >= a, over "
+                + samples + " samples, Y -60..50:");
+        for (int k = 0; k < thresholds.length; k++) {
+            table.append(String.format(java.util.Locale.ROOT, "%n  a=%.2f  %.5f", thresholds[k],
+                    above[k] / (double) samples));
+        }
+        LogUtils.getLogger().info(table.toString());
     }
 
     static void register(RegisterCommandsEvent event) {
@@ -62,6 +111,7 @@ public final class DevTools {
                 .executes(ctx -> veins(ctx.getSource()))
                 .then(Commands.literal("reset").executes(ctx -> {
                     STATS.clear();
+                    PLACED.clear();
                     ctx.getSource().sendSuccess(() -> Component.literal("Vein stats reset"), false);
                     return 1;
                 })));
@@ -82,6 +132,9 @@ public final class DevTools {
                                     .withClickEvent(new ClickEvent.SuggestCommand(tp))));
             src.sendSuccess(() -> line, false);
         });
+        StringBuilder placed = new StringBuilder("Placed:");
+        PLACED.forEach((id, n) -> placed.append(' ').append(id).append(" x").append(n.sum()));
+        src.sendSuccess(() -> Component.literal(placed.toString()), false);
         return STATS.size();
     }
 
