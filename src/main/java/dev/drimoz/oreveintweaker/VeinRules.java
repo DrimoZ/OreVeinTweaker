@@ -3,14 +3,19 @@ package dev.drimoz.oreveintweaker;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class VeinRules {
@@ -48,7 +53,17 @@ public final class VeinRules {
 
     private record Entry(Vein vein, Role role) {}
 
-    private record Rules(Map<Block, Entry> byVanillaBlock, Vein copper, Vein iron) {}
+    /**
+     * A vein of our own, run through vanilla's algorithm. It reads vanilla's noises at a shifted
+     * position: sideways so its ribbons do not follow copper's, and down so its Y range lands on
+     * -60..50, the only heights where those noises are defined.
+     */
+    private record Extra(int slot, Vein vein, int minY, int maxY) {
+        int dx() { return 10007 * (slot + 1); }
+        int dz() { return 7001 * (slot + 1); }
+    }
+
+    private record Rules(Map<Block, Entry> byVanillaBlock, Vein copper, Vein iron, List<Extra> extras) {}
 
     // Read from worldgen threads: the whole snapshot is swapped, never mutated in place. Null until
     // common setup, where the registries this resolves against are complete.
@@ -86,10 +101,63 @@ public final class VeinRules {
         Rules r = rules;
         Entry entry = r == null ? null : r.byVanillaBlock().get(vanilla.getBlock());
         if (entry == null) return vanilla;
-        Vein v = entry.vein();
-        if (!v.enabled()) return null;
+        if (!entry.vein().enabled()) return null;
+        return place(entry.vein(), entry.role(), random);
+    }
 
-        Role role = entry.role();
+    /**
+     * Vanilla's vein algorithm (OreVeinifier.create, unchanged since 1.18) for the extra veins, where
+     * vanilla placed nothing. Copper's half of the toggle (> 0) only, so size 1 matches one vanilla type.
+     *
+     * @param randoms one stream per extra slot, see {@link #extraRandoms}
+     * @return the block to place, or null when no extra vein is here
+     */
+    @Nullable
+    public static BlockState applyExtra(DensityFunction.FunctionContext ctx, DensityFunction toggle,
+                                        DensityFunction ridged, DensityFunction gap, PositionalRandomFactory[] randoms) {
+        Rules r = rules;
+        if (r == null) return null;
+        int x = ctx.blockX(), y = ctx.blockY(), z = ctx.blockZ();
+        for (Extra e : r.extras()) {
+            if (y < e.minY() || y > e.maxY()) continue;
+            var at = new DensityFunction.SinglePointContext(x + e.dx(), y - e.minY() - 60, z + e.dz());
+            double t = toggle.compute(at);
+            if (t <= 0) continue;
+            t += e.vein().shift();
+            int edge = Math.min(e.maxY() - y, y - e.minY());
+            if (t + Mth.clampedMap(edge, 0, 20, -0.2, 0) < 0.4) continue;
+            RandomSource random = randoms[e.slot()].at(x, y, z);
+            if (random.nextFloat() > 0.7F || ridged.compute(at) >= 0) continue;
+            double richness = Mth.clampedMap(t, 0.4, 0.6, 0.1, 0.3);
+            Role role = random.nextFloat() < richness && gap.compute(at) > -0.3
+                    ? (random.nextFloat() < 0.02F ? Role.RAW : Role.ORE) : Role.FILLER;
+            return place(e.vein(), role, random);
+        }
+        return null;
+    }
+
+    static List<String> extraNames() {
+        Rules r = rules;
+        return r == null ? List.of() : r.extras().stream().map(e -> "extra_" + (e.slot() + 1)).toList();
+    }
+
+    /** Dev check: whether enabled extra vein {@code i} passes its size threshold at a Y -60..50 sample. */
+    static boolean extraToggleHit(int i, DensityFunction toggle, int x, int sampleY, int z) {
+        Extra e = rules.extras().get(i);
+        double t = toggle.compute(new DensityFunction.SinglePointContext(x + e.dx(), sampleY, z + e.dz()));
+        return t > 0 && t + e.vein().shift() >= 0.4;
+    }
+
+    public static PositionalRandomFactory[] extraRandoms(PositionalRandomFactory vanilla) {
+        var randoms = new PositionalRandomFactory[VeinConfig.EXTRA.length];
+        for (int i = 0; i < randoms.length; i++) {
+            randoms[i] = vanilla.fromHashOf("oreveintweaker:extra_" + (i + 1)).forkPositional();
+        }
+        return randoms;
+    }
+
+    /** Re-rolls a vein block's role for ore_amount and raw_block_amount, then picks the configured block. */
+    private static BlockState place(Vein v, Role role, RandomSource random) {
         if (role == Role.FILLER) {
             if (v.oreAmount() > 1 && random.nextDouble() < (v.oreAmount() - 1) * ORE_PER_FILLER) role = Role.ORE;
         } else if (v.oreAmount() < 1 && random.nextDouble() >= v.oreAmount()) {
@@ -114,7 +182,19 @@ public final class VeinRules {
         byVanillaBlock.put(Blocks.DEEPSLATE_IRON_ORE, new Entry(iron, Role.ORE));
         byVanillaBlock.put(Blocks.RAW_IRON_BLOCK, new Entry(iron, Role.RAW));
         byVanillaBlock.put(Blocks.TUFF, new Entry(iron, Role.FILLER));
-        rules = new Rules(byVanillaBlock, copper, iron);
+        List<Extra> extras = new ArrayList<>();
+        for (int i = 0; i < VeinConfig.EXTRA.length; i++) {
+            VeinConfig.Extra cfg = VeinConfig.EXTRA[i];
+            if (!cfg.vein().enabled().get()) continue;
+            int minY = cfg.minY().get(), maxY = cfg.maxY().get();
+            if (maxY - minY > VeinConfig.MAX_EXTRA_HEIGHT) {
+                LOG.warn("[{}] extra_{}: max_y is more than {} above min_y, using {}", OreVeinTweaker.MOD_ID,
+                        i + 1, VeinConfig.MAX_EXTRA_HEIGHT, minY + VeinConfig.MAX_EXTRA_HEIGHT);
+                maxY = minY + VeinConfig.MAX_EXTRA_HEIGHT;
+            }
+            extras.add(new Extra(i, vein(cfg.vein(), Blocks.STONE, Blocks.STONE, Blocks.STONE), minY, maxY));
+        }
+        rules = new Rules(byVanillaBlock, copper, iron, List.copyOf(extras));
     }
 
     private static Vein vein(VeinConfig.Vein cfg, Block ore, Block raw, Block filler) {
