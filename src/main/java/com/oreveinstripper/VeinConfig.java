@@ -1,6 +1,6 @@
 package com.oreveinstripper;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class VeinConfig {
@@ -40,6 +40,6 @@ public final class VeinConfig {
     }
 
     private static ModConfigSpec.ConfigValue<String> blockId(ModConfigSpec.Builder b, String key, String def) {
-        return b.define(key, def, o -> o instanceof String s && ResourceLocation.tryParse(s) != null);
+        return b.define(key, def, o -> o instanceof String s && Identifier.tryParse(s) != null);
     }
 }

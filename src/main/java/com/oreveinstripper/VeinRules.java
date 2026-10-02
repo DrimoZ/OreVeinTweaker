@@ -2,7 +2,7 @@ package com.oreveinstripper;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,7 +43,7 @@ public final class VeinRules {
     }
 
     private static BlockState resolve(String id, Block fallback) {
-        return BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(id))
+        return BuiltInRegistries.BLOCK.getOptional(Identifier.parse(id))
                 .map(Block::defaultBlockState)
                 .orElseGet(() -> {
                     LOG.warn("[{}] Unknown block '{}', keeping {}", OreVeinStripper.MOD_ID, id,

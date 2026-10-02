@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.LongAdder;
  * /veins [reset]   - what the vanilla vein generator wanted to place vs what this mod placed instead.
  */
 public final class DevTools {
-    public static final boolean ENABLED = !FMLLoader.isProduction();
+    public static final boolean ENABLED = !FMLLoader.getCurrent().isProduction();
     private static final int STRIP_MAX_Y = 64;
 
     // Vanilla vein block -> stats. Written from worldgen threads.
@@ -52,13 +52,13 @@ public final class DevTools {
 
     static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("strip")
-                .requires(src -> src.hasPermission(2))
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(ctx -> strip(ctx.getSource(), 2))
                 .then(Commands.argument("radius", IntegerArgumentType.integer(0, 8))
                         .executes(ctx -> strip(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))));
 
         event.getDispatcher().register(Commands.literal("veins")
-                .requires(src -> src.hasPermission(2))
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(ctx -> veins(ctx.getSource()))
                 .then(Commands.literal("reset").executes(ctx -> {
                     STATS.clear();
@@ -79,7 +79,7 @@ public final class DevTools {
                             + " -> " + stat.placed + "  last at ")
                     .append(Component.literal("[" + p.toShortString() + "]")
                             .withStyle(Style.EMPTY.withUnderlined(true)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))));
+                                    .withClickEvent(new ClickEvent.SuggestCommand(tp))));
             src.sendSuccess(() -> line, false);
         });
         return STATS.size();
@@ -88,16 +88,16 @@ public final class DevTools {
     // ponytail: plain setBlock per block, a radius of 8 freezes the server for a while; fine for a dev tool.
     private static int strip(CommandSourceStack src, int radius) {
         ServerLevel level = src.getLevel();
-        ChunkPos center = new ChunkPos(BlockPos.containing(src.getPosition()));
+        ChunkPos center = ChunkPos.containing(BlockPos.containing(src.getPosition()));
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int removed = 0;
 
-        for (int cx = center.x - radius; cx <= center.x + radius; cx++) {
-            for (int cz = center.z - radius; cz <= center.z + radius; cz++) {
+        for (int cx = center.x() - radius; cx <= center.x() + radius; cx++) {
+            for (int cz = center.z() - radius; cz <= center.z() + radius; cz++) {
                 for (int x = cx << 4; x < (cx << 4) + 16; x++) {
                     for (int z = cz << 4; z < (cz << 4) + 16; z++) {
-                        for (int y = level.getMinBuildHeight(); y < STRIP_MAX_Y; y++) {
+                        for (int y = level.getMinY(); y < STRIP_MAX_Y; y++) {
                             BlockState state = level.getBlockState(pos.set(x, y, z));
                             if (!state.isAir() && !keep(state)) {
                                 level.setBlock(pos, air, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
