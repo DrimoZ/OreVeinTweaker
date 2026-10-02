@@ -5,7 +5,7 @@ Control Minecraft's large ore veins - the long ribbons of copper in granite and 
 any block, or add new kinds of veins. Server-side only.
 
 This page is the full guide. The short version is the
-[CurseForge page](https://www.curseforge.com/minecraft/mc-mods/ore-vein-tweaker).
+[CurseForge page](https://www.curseforge.com/minecraft/mc-mods/oreveintweaker).
 
 - [Getting started](#getting-started)
 - [The config file](#the-config-file)

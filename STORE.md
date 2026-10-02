@@ -126,7 +126,6 @@ More recipes, every option in detail and how precise the numbers are:
 
 - [ ] Create the GitHub repository `DrimoZ/OreVeinTweaker` and push all branches - the page links to
       its README as the full guide.
-- [ ] Check that README's CurseForge link matches the project's real URL.
 - [ ] Replace the summary and the description with the ones above.
 - [ ] Gallery (optional): before/after screenshots of the same seed, taken in a dev run with `/strip`
       (dev-only command that clears the stone around you so the veins show).
