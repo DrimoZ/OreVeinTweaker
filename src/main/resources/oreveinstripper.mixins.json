@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.oreveinstripper.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "oreveinstripper.refmap.json",
+  "mixins": [
+    "OreVeinifierMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
