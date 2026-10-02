@@ -11,6 +11,7 @@ This page is the full guide. The short version is the
 - [The config file](#the-config-file)
 - [New veins](#new-veins)
 - [Recipes](#recipes)
+- [Complete examples](#complete-examples)
 - [How precise is it?](#how-precise-is-it)
 - [Compatibility](#compatibility)
 - [Versions and building](#versions-and-building)
@@ -124,6 +125,64 @@ Copy the part you need into the config file; leave the other lines as they are.
     ore = "create:zinc_ore"
     raw_block = "create:raw_zinc_block"
     filler = "minecraft:calcite"
+```
+
+## Complete examples
+
+Four complete setups, one per kind of modpack. Put each line in the matching section of
+`config/oreveintweaker-common.toml`, in place of the same key; anything you do not paste stays as it is.
+
+**⚔️ Expert pack - rare veins, each one a jackpot**
+```toml
+[copper]
+    size = 0.5              # half as many copper veins...
+    ore_amount = 2.0        # ...with twice the ore inside
+    raw_block_amount = 3.0  # and three times the raw blocks
+[iron]
+    size = 0.4
+    ore_amount = 2.5
+    raw_block_amount = 3.0
+```
+
+**⚙️ Create pack - zinc gets its own veins**
+```toml
+# Copper and iron stay vanilla. Zinc veins run in calcite, through the copper heights.
+[extra_1]
+    enabled = true
+    size = 0.8                          # a bit rarer than copper
+    ore = "create:zinc_ore"
+    raw_block = "create:raw_zinc_block"
+    filler = "minecraft:calcite"
+    min_y = 0
+    max_y = 70
+```
+
+**💰 Gold rush - the deep is gold and redstone**
+```toml
+# The iron veins become gold veins, a little poorer since gold is precious...
+[iron]
+    ore = "minecraft:deepslate_gold_ore"
+    raw_block = "minecraft:raw_gold_block"
+    ore_amount = 0.6
+# ...and redstone veins in calcite join them (the slot's own defaults, Y -60 to -20).
+[extra_3]
+    enabled = true
+```
+
+**🏛️ Builder pack - huge stone bands, no free ore**
+```toml
+# The veins stay as wide decorative ribbons of granite, tuff and dripstone.
+[copper]
+    size = 2.5
+    ore_amount = 0.0
+[iron]
+    size = 2.5
+    ore_amount = 0.0
+[extra_2]
+    enabled = true
+    size = 2.0
+    ore_amount = 0.0
+    filler = "minecraft:dripstone_block"
 ```
 
 ## How precise is it?
