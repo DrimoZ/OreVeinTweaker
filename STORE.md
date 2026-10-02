@@ -3,6 +3,7 @@
 Paste-ready text for the CurseForge (and Modrinth) project page. Short on purpose: it sells the mod
 and gets a player started; everything else - every option in detail, precision, compatibility - is in
 `README.md`, which the page links to as the full guide. Every claim here is something the mod does
+The banner and section headers are `docs/store-art/`, from `java tools/Banners.java`, linked from GitHub.
 today; check numbers against `VeinConfig.java` / `VeinRules.java` and `CHANGELOG.md` before changing
 one.
 
@@ -27,10 +28,12 @@ artwork with redistribution granted.
 
 <!-- Everything below this line is pasted into CurseForge's Markdown editor as-is. -->
 
-## The large ore veins, your way
+![Ore Vein Tweaker](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/banner.png)
 
 Deep underground, Minecraft hides **large ore veins**: long ribbons of copper in granite and of iron in
 tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what they look like.
+
+![What it does](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_features.png)
 
 - 🚫 **Turn them off** - iron, copper, or both
 - 📏 **Resize them** - bigger and more common, or smaller and rarer
@@ -41,7 +44,7 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 One config file. No datapack. **Server-side only**: players don't need it.
 Works with terrain mods like Terralith and Tectonic.
 
-## Quick start
+![Quick start](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_start.png)
 
 1. Put the mod on your **server** - or in your mods folder for singleplayer.
 2. Launch once, then open `config/oreveintweaker-common.toml`.
@@ -49,7 +52,7 @@ Works with terrain mods like Terralith and Tectonic.
 
 > ⚠️ Chunks that are already generated never change. Best on a new world, or as a modpack default.
 
-## Options
+![Options](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_options.png)
 
 The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extra_3]` for new veins
 (off by default). Every option is explained inside the file.
@@ -63,7 +66,7 @@ The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extr
 | `ore`, `raw_block`, `filler` | vanilla | Any block, from any mod |
 | `min_y`, `max_y` | per slot | New veins only: their height |
 
-## Recipes
+![Recipes](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_recipes.png)
 
 **No large veins at all**
 ```toml
@@ -96,16 +99,16 @@ The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extr
 More recipes, every option in detail and how precise the numbers are:
 **[the full guide](https://github.com/DrimoZ/OreVeinTweaker#readme)**.
 
-## FAQ
+![FAQ](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_faq.png)
 
-**My existing world?** Only newly generated chunks change.
-**Do players need the mod?** Not on a server. In singleplayer, yes.
-**Normal iron and copper ore?** Untouched - only the large veins.
-**Other dimensions?** Large veins only generate in the Overworld.
-**Dynamic Ore Veins?** It replaces the same generator: use one or the other.
-**Modpacks?** Yes, no need to ask. Credit appreciated, never required.
+- **My existing world?** Only newly generated chunks change.
+- **Do players need the mod?** Not on a server. In singleplayer, yes.
+- **Normal iron and copper ore?** Untouched - only the large veins.
+- **Other dimensions?** Large veins only generate in the Overworld.
+- **Dynamic Ore Veins?** It replaces the same generator: use one or the other.
+- **Modpacks?** Yes, no need to ask. Credit appreciated, never required.
 
-## Versions
+![Versions](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_versions.png)
 
 | Minecraft | Loader | Java |
 |---|---|---|

@@ -20,6 +20,7 @@ components to match (26.1.2.112).
 | `gradlew build` | the jar, `build/libs/oreveintweaker-<version>+<mc>.jar` |
 | `gradlew runClient` | dev client: `run-1.20.1/` on 1.20.1, `run/` on the NeoForge branches |
 | `java tools/GenerateLogo.java` | regenerates `src/main/resources/logo.png` |
+| `java tools/Banners.java` | regenerates the store page art in `docs/store-art/` (after one build: it reads the font from the game jar) |
 
 `org.gradle.daemon=false`. A dev client killed mid-write has twice left a truncated file behind
 (`build/downloadMCMeta/version.json`, Forge's `config/fml.toml`): if Gradle or the game fails on
