@@ -1,0 +1,50 @@
+Copyright (c) 2026 DrimoZ. All rights reserved.
+
+This covers the mod's artwork - the logo, src/main/resources/logo.png, and any
+store image - whether committed directly or produced by a generator script in
+this repository. It does not cover the code, which is under the MIT License;
+see LICENSE.
+
+These assets are "all rights reserved" by default, with the following
+permissions granted on top. Nothing here takes away a right you would otherwise
+have.
+
+
+YOU MAY, WITHOUT ASKING:
+
+  1. Redistribute these assets as part of an unmodified Ore Vein Tweaker release.
+     This explicitly includes modpacks and collections, public or private,
+     monetised or not, on any platform or launcher.
+
+  2. Redistribute them as part of a modified build, provided the result is not
+     presented as the original project. See the note on the name below.
+
+  3. Show them: screenshots, videos, streams, wikis and store listings,
+     monetised or not.
+
+  4. Modify them for your own use, or ship modified versions inside a resource
+     pack or equivalent overlay.
+
+
+YOU MAY NOT, WITHOUT WRITTEN PERMISSION:
+
+  5. Use these assets in another project or product.
+
+  6. Redistribute them on their own, separately from Ore Vein Tweaker.
+
+
+ON THE NAME
+
+"Ore Vein Tweaker" is not licensed by either file. You are free to fork the code, but
+please do not publish a fork under the same name - two different projects with
+one name only confuses the people trying to work out which one broke.
+
+
+CONTRIBUTIONS
+
+Anything you contribute to this repository is contributed under these same
+terms, code under LICENSE and assets under this file.
+
+
+If you want to do something this does not cover, open an issue and ask. The
+answer is usually yes.
