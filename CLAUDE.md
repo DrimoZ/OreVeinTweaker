@@ -36,6 +36,14 @@ components to match (26.1.2.112).
   `ore_amount` and `raw_block_amount` (vanilla ratios, measured: 1 ore per 4 filler, 2 raw per 100
   ore), then swapped for the configured blocks. Rolls use the mod's own seeded positional random, not
   vanilla's, so they do not correlate with vanilla's ore decision.
+- **extra veins**: where vanilla places nothing, `VeinRules.applyExtra` runs vanilla's algorithm
+  (copied from `OreVeinifier.create`) for each enabled `[extra_N]`, reading vanilla's own toggle,
+  ridged and gap noises at a shifted position: sideways per slot so the ribbons are new, and down so
+  `min_y..max_y` lands on Y -60..50, the only range where the overworld router defines those noises
+  (hence the 110-block cap). NoiseChunk's caches compute directly for a foreign context, so sampling
+  elsewhere is safe. Copper's half of the toggle only, so `size` keeps its meaning.
+
+Server-side only: no registries, no packets, `displayTest = "IGNORE_ALL_VERSION"`.
 
 `VeinRules` is an immutable snapshot swapped on common setup and on every config reload: worldgen
 threads read it without locks.
