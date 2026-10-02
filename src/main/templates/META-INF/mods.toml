@@ -9,6 +9,9 @@ displayName = "${mod_name}"
 authors = "${mod_authors}"
 logoFile = "logo.png"
 logoBlur = false
+# Worldgen only, no blocks, items or packets: clients do not need the mod, so the server list must not
+# flag a server running it as incompatible.
+displayTest = "IGNORE_ALL_VERSION"
 description = '''${mod_description}'''
 
 [[dependencies.${mod_id}]]

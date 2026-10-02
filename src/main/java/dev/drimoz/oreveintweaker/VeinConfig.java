@@ -5,10 +5,13 @@ import net.minecraftforge.common.ForgeConfigSpec;
 
 public final class VeinConfig {
     public static final double MAX_SIZE = 3.0;
+    // Vanilla's vein noises are only defined over Y -60..50: an extra vein is that slice, moved.
+    public static final int MAX_EXTRA_HEIGHT = 110;
 
     public static final ForgeConfigSpec SPEC;
     public static final Vein COPPER;
     public static final Vein IRON;
+    public static final Extra[] EXTRA;
 
     public record Vein(ForgeConfigSpec.BooleanValue enabled,
                        ForgeConfigSpec.DoubleValue size,
@@ -18,26 +21,50 @@ public final class VeinConfig {
                        ForgeConfigSpec.ConfigValue<String> rawBlock,
                        ForgeConfigSpec.ConfigValue<String> filler) {}
 
+    public record Extra(Vein vein, ForgeConfigSpec.IntValue minY, ForgeConfigSpec.IntValue maxY) {}
+
     static {
         var b = new ForgeConfigSpec.Builder();
         COPPER = vein(b, "copper", "Large copper veins: granite with copper ore, between Y 0 and 50.",
-                "minecraft:copper_ore", "minecraft:raw_copper_block", "minecraft:granite");
+                true, "minecraft:copper_ore", "minecraft:raw_copper_block", "minecraft:granite");
+        b.pop();
         IRON = vein(b, "iron", "Large iron veins: tuff with deepslate iron ore, between Y -60 and -8.",
-                "minecraft:deepslate_iron_ore", "minecraft:raw_iron_block", "minecraft:tuff");
+                true, "minecraft:deepslate_iron_ore", "minecraft:raw_iron_block", "minecraft:tuff");
+        b.pop();
+        // ponytail: three fixed slots, not a list - Forge's config has no usable list of tables, and
+        // each extra vein costs one more noise sample per underground block.
+        EXTRA = new Extra[]{
+                extra(b, 1, "minecraft:deepslate_gold_ore", "minecraft:raw_gold_block", "minecraft:smooth_basalt", -60, -10),
+                extra(b, 2, "minecraft:coal_ore", "minecraft:coal_block", "minecraft:andesite", 0, 60),
+                extra(b, 3, "minecraft:deepslate_redstone_ore", "minecraft:redstone_block", "minecraft:calcite", -60, -20)};
         SPEC = b.build();
     }
 
     private VeinConfig() {}
 
-    private static Vein vein(ForgeConfigSpec.Builder b, String name, String title,
+    private static Extra extra(ForgeConfigSpec.Builder b, int n, String ore, String raw, String filler,
+                               int minY, int maxY) {
+        var vein = vein(b, "extra_" + n, "A new kind of large vein, off by default: shaped like the vanilla ones,"
+                + " made of the blocks below, between min_y and max_y.", false, ore, raw, filler);
+        var extra = new Extra(vein,
+                b.comment("Lowest Y of the vein.").defineInRange("min_y", minY, -2032, 2031),
+                b.comment("Highest Y of the vein, at most " + MAX_EXTRA_HEIGHT + " above min_y.",
+                        "Veins thin out over the 20 blocks at each end, as vanilla ones do.")
+                        .defineInRange("max_y", maxY, -2032, 2031));
+        b.pop();
+        return extra;
+    }
+
+    /** Leaves the builder inside the vein's section, so the caller can add keys before popping it. */
+    private static Vein vein(ForgeConfigSpec.Builder b, String name, String title, boolean enabled,
                              String ore, String raw, String filler) {
         b.comment(title,
                 "Every change only applies to chunks generated afterwards: on an existing world,",
                 "the border with older chunks will be visible.").push(name);
-        var vein = new Vein(
+        return new Vein(
                 b.comment("false = this vein never generates (plain stone/deepslate instead).",
                                 "true  = it generates, shaped by the settings below.")
-                        .define("enabled", true),
+                        .define("enabled", enabled),
                 b.comment("How much of the underground is vein. 1.0 = vanilla.",
                                 "2.0 = about twice the vein volume (thicker and more common), 0.5 = about half,",
                                 "0 = none at all. Bigger veins are also slightly richer at their core.")
@@ -51,8 +78,6 @@ public final class VeinConfig {
                 blockId(b.comment("Block used as the vein's ore. Any block id, from any mod."), "ore", ore),
                 blockId(b.comment("Block used as the vein's raw ore block."), "raw_block", raw),
                 blockId(b.comment("Block the ore sits in."), "filler", filler));
-        b.pop();
-        return vein;
     }
 
     private static ForgeConfigSpec.ConfigValue<String> blockId(ForgeConfigSpec.Builder b, String key, String def) {

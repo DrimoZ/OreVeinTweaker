@@ -31,9 +31,16 @@ public abstract class OreVeinifierMixin {
         // Our own seeded stream: reusing vanilla's per-position random would correlate our rolls with
         // the ones that already decided ore vs filler.
         PositionalRandomFactory ours = random.fromHashOf("oreveintweaker:veins").forkPositional();
+        PositionalRandomFactory[] extraRandoms = VeinRules.extraRandoms(random);
+        // The extra veins size themselves: they need the toggle as vanilla computes it.
+        DensityFunction rawToggle = toggle instanceof VeinSizeToggle sized ? sized.vanilla() : toggle;
         cir.setReturnValue(ctx -> {
             BlockState state = vanilla.calculate(ctx);
-            if (state == null) return null;
+            if (state == null) {
+                BlockState extra = VeinRules.applyExtra(ctx, rawToggle, ridged, gap, extraRandoms);
+                if (extra != null && DevTools.ENABLED) DevTools.recordExtra(extra);
+                return extra;
+            }
             BlockState placed = VeinRules.apply(state, ours.at(ctx.blockX(), ctx.blockY(), ctx.blockZ()));
             if (DevTools.ENABLED) DevTools.record(state, placed, ctx.blockX(), ctx.blockY(), ctx.blockZ());
             return placed;

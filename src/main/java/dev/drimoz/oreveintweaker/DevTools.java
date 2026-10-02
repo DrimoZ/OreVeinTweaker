@@ -57,6 +57,12 @@ public final class DevTools {
         PLACED.computeIfAbsent(stat.placed, k -> new LongAdder()).increment();
     }
 
+    /** Extra veins have no vanilla block to compare with: they only count towards the totals. */
+    public static void recordExtra(BlockState placed) {
+        PLACED.computeIfAbsent("extra " + BuiltInRegistries.BLOCK.getKey(placed.getBlock()), k -> new LongAdder())
+                .increment();
+    }
+
     /**
      * Logs how often |vein_toggle| reaches each threshold over the vein heights. Vanilla's veins sit
      * above 0.4, so this table is what turns "size = 2" into "about twice the vein volume".
@@ -71,10 +77,14 @@ public final class DevTools {
         int samples = 200_000;
         // Vein volume per type, vanilla vs after this mod's resize: the ratio should read as `size`.
         long copperVanilla = 0, copperResized = 0, ironVanilla = 0, ironResized = 0;
+        // Extra veins are sized on copper's half of the toggle: vs vanilla copper, they should read as `size`.
+        var extras = VeinRules.extraNames();
+        long[] extraHits = new long[extras.size()];
         for (int i = 0; i < samples; i++) {
             int x = random.nextInt(40_000) - 20_000;
             int z = random.nextInt(40_000) - 20_000;
             int y = -60 + random.nextInt(111);
+            for (int e = 0; e < extraHits.length; e++) if (VeinRules.extraToggleHit(e, toggle, x, y, z)) extraHits[e]++;
             double raw = toggle.compute(new DensityFunction.SinglePointContext(x, y, z));
             double t = Math.abs(raw);
             for (int k = 0; k < thresholds.length; k++) if (t >= thresholds[k]) above[k]++;
@@ -90,6 +100,10 @@ public final class DevTools {
         LogUtils.getLogger().info(String.format(java.util.Locale.ROOT,
                 "[%s] vein volume vs vanilla with the current config: copper x%.2f, iron x%.2f",
                 OreVeinTweaker.MOD_ID, copperResized / (double) copperVanilla, ironResized / (double) ironVanilla));
+        for (int e = 0; e < extraHits.length; e++) {
+            LogUtils.getLogger().info(String.format(java.util.Locale.ROOT, "[%s] %s volume vs vanilla copper: x%.2f",
+                    OreVeinTweaker.MOD_ID, extras.get(e), extraHits[e] / (double) copperVanilla));
+        }
         StringBuilder table = new StringBuilder("[" + OreVeinTweaker.MOD_ID + "] |vein_toggle| >= a, over "
                 + samples + " samples, Y -60..50:");
         for (int k = 0; k < thresholds.length; k++) {
@@ -118,7 +132,7 @@ public final class DevTools {
     }
 
     private static int veins(CommandSourceStack src) {
-        if (STATS.isEmpty()) {
+        if (PLACED.isEmpty()) {
             src.sendSuccess(() -> Component.literal("No vein block generated since launch/reset. Explore new chunks."), false);
             return 0;
         }

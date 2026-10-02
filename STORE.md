@@ -10,8 +10,8 @@ one.
 
 > One line, 256 characters at most, shown under the name in every search result.
 
-Control the large iron and copper ore veins: turn each type off, make veins bigger or smaller, richer or
-poorer, or rebuild them from any block - even another mod's ore. One config file, no datapack.
+Control the large ore veins: turn iron or copper veins off, resize them, make them richer or poorer,
+rebuild them from any block - or add up to three new kinds of veins. One config file, server-side only.
 
 ## Categories
 
@@ -42,13 +42,16 @@ the veins as they are generated, **per vein type**, from one config file:
 - **Raw ore blocks** - more, fewer, or none at all.
 - **Rebuild them from other blocks** - any block from any mod: zinc veins for Create, gold veins,
   decorative stone bands...
+- **Add new veins** - up to three new kinds of large vein, made of any blocks, at the heights you
+  choose, on top of the copper and iron ones.
 
 It does not touch any worldgen file, so it works alongside terrain mods instead of replacing their
 files.
 
 ### Getting started
 
-1. Install the mod (on a server, on the server; in singleplayer, in your game).
+1. Install the mod: on a server, **only on the server** - players join with an unmodded game; in
+   singleplayer, in your game.
 2. Start the game once: it writes `config/oreveintweaker-common.toml`.
 3. Edit it - every option is explained inside the file - and **explore new chunks**.
 
@@ -61,8 +64,9 @@ use it. No restart needed.
 
 ### Every option
 
-The file has one section per vein type, `[copper]` and `[iron]`, with the same options. All defaults
-are vanilla: **installing the mod changes nothing until you edit the file.**
+The file has one section per vein type, `[copper]` and `[iron]`, with the same options, then three
+sections for new veins (see below). All defaults are vanilla: **installing the mod changes nothing
+until you edit the file.**
 
 | Option | Default | What it does |
 |---|---|---|
@@ -82,6 +86,23 @@ also slightly richer at their core, as vanilla veins are - that is how the gener
 **Order of effects.** `size` decides where veins are. Inside a vein, `ore_amount` decides ore vs
 filler, then `raw_block_amount` decides which ore becomes a raw block. Finally the blocks are swapped
 for `ore`, `raw_block` and `filler`.
+
+### New veins
+
+`[extra_1]`, `[extra_2]` and `[extra_3]` each add a new kind of large vein, **off by default**. They
+take every option above, plus two:
+
+| Option | Default | What it does |
+|---|---|---|
+| `min_y` | depends on the slot | Lowest Y of the vein. |
+| `max_y` | depends on the slot | Highest Y of the vein, at most 110 above `min_y`. Veins thin out over the 20 blocks at each end, as vanilla ones do. |
+
+A new vein is built by the same algorithm as vanilla's, with its own ribbons: it does not follow the
+copper or iron veins, and `size = 1` gives about as much vein as vanilla copper. Where a new vein
+crosses a vanilla one, the vanilla vein wins.
+
+The three slots come filled with examples - gold in smooth basalt (Y -60 to -10), coal in andesite
+(Y 0 to 60), redstone in calcite (Y -60 to -20) - so turning one on is a single line.
 
 ### Recipes
 
@@ -136,16 +157,33 @@ Copy the part you need into `config/oreveintweaker-common.toml`; keep the other 
     raw_block = "minecraft:raw_gold_block"
 ```
 
-A block id that does not exist is reported in the log and the vanilla block is kept, so a typo never
-breaks generation.
+**Gold veins, in addition to iron** - the iron veins stay, gold ones are added in the deep.
+```toml
+[extra_1]
+    enabled = true
+```
+
+**Zinc veins for Create, alongside copper**
+```toml
+[extra_2]
+    enabled = true
+    ore = "create:zinc_ore"
+    raw_block = "create:raw_zinc_block"
+    filler = "minecraft:calcite"
+```
+
+A block id that does not exist is reported in the log and the vanilla block (stone, for a new vein)
+is kept, so a typo never breaks generation.
 
 ### Compatibility
 
 - **Terrain mods** (Terralith, Tectonic and others): the mod changes no worldgen file, so there is
   nothing to conflict with. It applies to whatever veins the world's generator produces. If a mod or
   datapack turns large veins off entirely, there is nothing left to tweak.
-- **Other dimensions**: vanilla only generates large veins in the Overworld. If a datapack enables them
-  in another dimension, the same settings apply there.
+- **Other dimensions**: vanilla only generates large veins in the Overworld, and the new veins come
+  with them. If a datapack enables large veins in another dimension, the same settings - new veins
+  included - apply there.
+- **Server-side**: players do not need the mod to join a server that has it.
 - **Mods that replace the vein generator itself**, such as Dynamic Ore Veins, change the same thing
   in a different way: use one or the other.
 
@@ -166,8 +204,11 @@ never modified.
 **Does it remove normal iron and copper ore?** No. Only the large veins are affected; the ordinary ore
 blobs generate as usual.
 
-**Can I add new kinds of veins, like a third type?** No: Minecraft has exactly two large vein types,
-and this mod adjusts those two. Rebuilding one from other blocks (see Recipes) covers most uses.
+**Can I add new kinds of veins?** Yes, up to three: see New veins. They generate where large veins
+do, in the Overworld.
+
+**Do players need the mod?** Not on a server: install it there only. In singleplayer the game is its
+own server, so it goes in your mods folder.
 
 **Do I need a datapack?** No. Everything is in the config file.
 
@@ -196,7 +237,7 @@ them into another project.
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 1.0.0
+## Release checklist: 1.1.0
 
 - [ ] Create the GitHub repository `DrimoZ/OreVeinTweaker` and push all branches - the Links section
       above points to it.
@@ -205,7 +246,7 @@ them into another project.
 - [ ] Gallery: before/after screenshots of the same seed, taken in a dev run with `/strip` (dev-only
       command that clears the stone around you so the veins show).
 - [ ] Paste the description.
-- [ ] Three files, release type **Release**, each with the `## 1.0.0` section of `CHANGELOG.md`:
+- [ ] Three files, release type **Release**, each with the `## 1.1.0` section of `CHANGELOG.md`:
 
 | File | Game version | Loader | Java |
 |---|---|---|---|
@@ -213,5 +254,5 @@ them into another project.
 | the jar built on branch `1.21.1` | 1.21.1 | NeoForge | 21 |
 | the jar built on branch `26.1` | 26.1.2 | NeoForge | 25 |
 
-- [ ] Environment: **Server** required. Before ticking "client optional", check that a client without
-      the mod can join a server that has it, on each loader.
+- [ ] Environment: **Server** required, **client optional** (`displayTest = "IGNORE_ALL_VERSION"`, no
+      packets). Check once per loader that an unmodded client joins a server that has it.

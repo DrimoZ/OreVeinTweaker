@@ -6,9 +6,10 @@ added in 1.18 - per vein type, from one config file:
 - turn a type off,
 - make its veins bigger or smaller (`size`),
 - richer or poorer (`ore_amount`, `raw_block_amount`),
-- or rebuild them from any block, from any mod.
+- or rebuild them from any block, from any mod;
+- and add up to three new kinds of large vein (`[extra_1..3]`).
 
-Defaults are vanilla; nothing changes until `config/oreveintweaker-common.toml` is edited, and only
+Server-side only: players do not need it to join. Defaults are vanilla; nothing changes until `config/oreveintweaker-common.toml` is edited, and only
 newly generated chunks are affected. The full player guide, with every option and ready-made recipes,
 is the store page: [STORE.md](STORE.md).
 
