@@ -1,5 +1,6 @@
 package com.oreveinstripper.mixin;
 
+import com.oreveinstripper.DevTools;
 import com.oreveinstripper.VeinRules;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -21,7 +22,10 @@ public abstract class OreVeinifierMixin {
         NoiseChunk.BlockStateFiller vanilla = cir.getReturnValue();
         cir.setReturnValue(ctx -> {
             BlockState state = vanilla.calculate(ctx);
-            return state == null ? null : VeinRules.apply(state);
+            if (state == null) return null;
+            BlockState placed = VeinRules.apply(state);
+            if (DevTools.ENABLED) DevTools.record(state, placed, ctx.blockX(), ctx.blockY(), ctx.blockZ());
+            return placed;
         });
     }
 }
