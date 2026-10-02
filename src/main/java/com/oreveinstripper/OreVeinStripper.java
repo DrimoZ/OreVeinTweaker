@@ -1,26 +1,25 @@
 package com.oreveinstripper;
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(OreVeinStripper.MOD_ID)
 public class OreVeinStripper {
     public static final String MOD_ID = "oreveinstripper";
 
-    public OreVeinStripper() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, VeinConfig.SPEC);
-        var bus = FMLJavaModLoadingContext.get().getModEventBus();
+    public OreVeinStripper(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.COMMON, VeinConfig.SPEC);
         // Blocks are resolved once registries are filled (common setup), then on every config file edit.
-        bus.addListener(this::onSetup);
-        bus.addListener(this::onReload);
+        modBus.addListener(this::onSetup);
+        modBus.addListener(this::onReload);
 
         if (DevTools.ENABLED) {
-            MinecraftForge.EVENT_BUS.addListener(DevTools::register);
+            NeoForge.EVENT_BUS.addListener(DevTools::register);
         }
     }
 

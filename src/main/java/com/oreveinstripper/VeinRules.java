@@ -43,7 +43,7 @@ public final class VeinRules {
     }
 
     private static BlockState resolve(String id, Block fallback) {
-        return BuiltInRegistries.BLOCK.getOptional(new ResourceLocation(id))
+        return BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(id))
                 .map(Block::defaultBlockState)
                 .orElseGet(() -> {
                     LOG.warn("[{}] Unknown block '{}', keeping {}", OreVeinStripper.MOD_ID, id,

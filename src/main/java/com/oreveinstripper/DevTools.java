@@ -13,9 +13,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.Tags;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.fml.loading.FMLLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;

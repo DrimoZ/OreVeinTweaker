@@ -26,3 +26,8 @@ forge*changelog.txt
 
 # claude code local settings
 .claude/settings.local.json
+
+# NeoForge
+run-data
+repo
+src/generated/**/.cache

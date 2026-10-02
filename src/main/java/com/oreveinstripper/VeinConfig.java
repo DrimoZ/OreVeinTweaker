@@ -1,20 +1,20 @@
 package com.oreveinstripper;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class VeinConfig {
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
     public static final Vein COPPER;
     public static final Vein IRON;
 
-    public record Vein(ForgeConfigSpec.BooleanValue enabled,
-                       ForgeConfigSpec.ConfigValue<String> ore,
-                       ForgeConfigSpec.ConfigValue<String> rawBlock,
-                       ForgeConfigSpec.ConfigValue<String> filler) {}
+    public record Vein(ModConfigSpec.BooleanValue enabled,
+                       ModConfigSpec.ConfigValue<String> ore,
+                       ModConfigSpec.ConfigValue<String> rawBlock,
+                       ModConfigSpec.ConfigValue<String> filler) {}
 
     static {
-        var b = new ForgeConfigSpec.Builder();
+        var b = new ModConfigSpec.Builder();
         COPPER = vein(b, "copper", "Large copper veins (Y 0 to 50)",
                 "minecraft:copper_ore", "minecraft:raw_copper_block", "minecraft:granite");
         IRON = vein(b, "iron", "Large iron veins (Y -60 to -8)",
@@ -24,7 +24,7 @@ public final class VeinConfig {
 
     private VeinConfig() {}
 
-    private static Vein vein(ForgeConfigSpec.Builder b, String name, String title,
+    private static Vein vein(ModConfigSpec.Builder b, String name, String title,
                              String ore, String raw, String filler) {
         b.comment(title,
                 "Only affects chunks generated after the change: on an existing world,",
@@ -39,7 +39,7 @@ public final class VeinConfig {
         return vein;
     }
 
-    private static ForgeConfigSpec.ConfigValue<String> blockId(ForgeConfigSpec.Builder b, String key, String def) {
-        return b.define(key, def, o -> o instanceof String s && ResourceLocation.isValidResourceLocation(s));
+    private static ModConfigSpec.ConfigValue<String> blockId(ModConfigSpec.Builder b, String key, String def) {
+        return b.define(key, def, o -> o instanceof String s && ResourceLocation.tryParse(s) != null);
     }
 }
