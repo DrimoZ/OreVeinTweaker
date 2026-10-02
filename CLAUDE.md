@@ -60,9 +60,10 @@ Registered only outside production (`DevTools.ENABLED`):
 
 ## Documentation map
 
-- `README.md` - short version, with the permissions block
-- `STORE.md` - CurseForge/Modrinth page and release checklist; **any number changed in code must be
-  changed there too**
+- `README.md` - the full player guide (the project's wiki: every option, recipes, measured
+  precision, compatibility), plus branches and the permissions block
+- `STORE.md` - the short CurseForge/Modrinth page, linking to the README, and the release checklist
+- **Any number changed in code must be changed in both.**
 - `PORTING.md` - what differs between branches
 - `CHANGELOG.md`
 
