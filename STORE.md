@@ -14,7 +14,7 @@ The banner and section headers are `docs/store-art/`, from `java tools/Banners.j
 > One line, 256 characters at most, shown under the name in every search result.
 
 Control the large ore veins: turn iron or copper veins off, resize them, make them richer or poorer,
-rebuild them from any block - or add up to three new kinds of veins. One config file, server-side only.
+rebuild them from any block - or add as many new kinds of veins as you want. One config file, server-side only.
 
 ## Categories
 
@@ -40,7 +40,8 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 - 📏 **Resize them** - bigger and more common, or smaller and rarer
 - 💎 **Richer or poorer** - more ore and raw blocks, or fewer
 - 🧱 **Rebuild them** from any block of any mod - zinc veins for Create, gold veins...
-- ✨ **Add new veins** - up to three new kinds, at the heights you choose
+- ✨ **Add new veins** - as many as you want, one small file each, at the heights you choose
+- 🎲 **Mix blocks** - `"create:zinc_ore*3, minecraft:copper_ore"`: weighted palettes for ore, raw blocks and filler
 - 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too
 
 One config file. No datapack. **Server-side only**: players don't need it.

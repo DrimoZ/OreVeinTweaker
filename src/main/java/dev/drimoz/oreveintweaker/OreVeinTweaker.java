@@ -20,6 +20,7 @@ public class OreVeinTweaker {
         bus.addListener(this::onReload);
 
         MinecraftForge.EVENT_BUS.addListener(Census::register);
+        MinecraftForge.EVENT_BUS.addListener(VeinCommand::register);
         if (DevTools.ENABLED) {
             MinecraftForge.EVENT_BUS.addListener(DevTools::register);
             MinecraftForge.EVENT_BUS.addListener(DevTools::measureToggle);

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Unlimited veins: one TOML file per vein in `config/oreveintweaker/veins/` (same options as
+  `[extra_N]`, an `_example.toml` is written on first start). `/oreveintweaker reload` re-reads them
+  and lists what is on, and any file it skipped with the reason. A vein keeps its shape whatever the
+  other files are. Measured cost: about 1-2% chunk generation time per vein.
+- Palettes: `ore`, `raw_block` and `filler` accept `"block*weight, block"` lists, in the config file
+  and in vein files. A single block generates exactly as before.
+
 - New command `/oreveintweaker census [radius]` (permission level 2): counts every ore, raw block and
   storage block in the loaded chunks around you, with the count per chunk and each ore's share of the
   ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32).

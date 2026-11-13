@@ -38,7 +38,9 @@ components to match (26.1.2.112).
   ore), then swapped for the configured blocks. Rolls use the mod's own seeded positional random, not
   vanilla's, so they do not correlate with vanilla's ore decision.
 - **extra veins**: where vanilla places nothing, `VeinRules.applyExtra` runs vanilla's algorithm
-  (copied from `OreVeinifier.create`) for each enabled `[extra_N]`, reading vanilla's own toggle,
+  (copied from `OreVeinifier.create`) for each enabled `[extra_N]` and each vein file of
+  `config/oreveintweaker/veins/` (`VeinFiles`; a file's slot comes from its name, so a vein never moves
+  when others come and go; blocks are weighted `Palette`s), reading vanilla's own toggle,
   ridged and gap noises at a shifted position: sideways per slot so the ribbons are new, and down so
   `min_y..max_y` lands on Y -60..50, the only range where the overworld router defines those noises
   (hence the 110-block cap). NoiseChunk's caches compute directly for a foreign context, so sampling
