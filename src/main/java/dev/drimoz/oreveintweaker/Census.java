@@ -7,7 +7,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -41,7 +41,7 @@ public final class Census {
 
     static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("oreveintweaker")
-                .requires(src -> src.hasPermission(2))
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("census")
                         .executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false))
                         .then(radius(Commands.literal("y"), true))
@@ -58,11 +58,11 @@ public final class Census {
 
     private static int run(CommandSourceStack src, int radius, boolean byY) {
         ServerLevel level = src.getLevel();
-        ChunkPos center = new ChunkPos(BlockPos.containing(src.getPosition()));
+        ChunkPos center = ChunkPos.containing(BlockPos.containing(src.getPosition()));
         Set<Block> extra = new HashSet<>();
         List<String> unknown = new ArrayList<>();
         for (String id : VeinConfig.CENSUS_BLOCKS.get()) {
-            ResourceLocation rl = ResourceLocation.tryParse(id);
+            Identifier rl = Identifier.tryParse(id);
             var block = rl == null ? java.util.Optional.<Block>empty() : BuiltInRegistries.BLOCK.getOptional(rl);
             if (block.isPresent()) extra.add(block.get()); else unknown.add(id);
         }
@@ -72,8 +72,8 @@ public final class Census {
         Set<String> ores = new HashSet<>();
         Map<BlockState, String> names = new HashMap<>();
         int loaded = 0;
-        for (int cx = center.x - radius; cx <= center.x + radius; cx++) {
-            for (int cz = center.z - radius; cz <= center.z + radius; cz++) {
+        for (int cx = center.x() - radius; cx <= center.x() + radius; cx++) {
+            for (int cz = center.z() - radius; cz <= center.z() + radius; cz++) {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
                 if (chunk == null) continue;
                 loaded++;
@@ -90,7 +90,7 @@ public final class Census {
         }
 
         int side = radius * 2 + 1;
-        send(src, "Census " + level.dimension().location() + ": " + loaded + " of " + side * side
+        send(src, "Census " + level.dimension().identifier() + ": " + loaded + " of " + side * side
                 + " chunks loaded within " + radius * 16 + " blocks"
                 + (loaded < side * side ? " (only loaded chunks are counted)" : ""));
         if (!unknown.isEmpty()) send(src, "Ignored unknown ids in census.blocks: " + String.join(", ", unknown));
@@ -134,7 +134,7 @@ public final class Census {
     private static String nameOf(BlockState state, Set<Block> extra, Set<String> ores) {
         boolean ore = state.is(Tags.Blocks.ORES);
         if (!ore && !state.is(Tags.Blocks.STORAGE_BLOCKS) && !extra.contains(state.getBlock())) return "";
-        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String path = id.getPath();
         if (ore && path.startsWith("deepslate_")) path = path.substring("deepslate_".length());
         String name = id.getNamespace().equals("minecraft") ? path : id.getNamespace() + ":" + path;
