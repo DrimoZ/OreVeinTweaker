@@ -221,12 +221,27 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
 actually holds around you, to check a config or compare two of them:
 
 ```
-Census minecraft:overworld: 112 of 289 chunks loaded within 128 blocks (only loaded chunks are counted)
-  iron_ore: 4120 (36.8/chunk, 38.1% of ores)
-  copper_ore: 2310 (20.6/chunk, 21.4% of ores)
-  raw_iron_block: 31 (0.3/chunk)
-  total ore: 10810 (96.5/chunk)
+> /oreveintweaker census 6
+Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
+  copper_ore: 18219 (107.8/chunk, 26.4% of ores)
+  coal_ore: 17195 (101.7/chunk, 24.9% of ores)
+  iron_ore: 14381 (85.1/chunk, 20.9% of ores)
+  redstone_ore: 6247 (37.0/chunk, 9.1% of ores)
+  gold_ore: 4381 (25.9/chunk, 6.4% of ores)
+  lapis_ore: 4302 (25.5/chunk, 6.2% of ores)
+  diamond_ore: 4216 (24.9/chunk, 6.1% of ores)
+  raw_copper_block: 23 (0.1/chunk)
+  raw_iron_block: 18 (0.1/chunk)
+  total ore: 68941 (407.9/chunk)
+
+> /oreveintweaker census y 6
+  Y 48..63: 10525 ore - coal_ore 55% copper_ore 37% iron_ore 5% lapis_ore 3%
+  Y 16..31: 11883 ore - copper_ore 39% iron_ore 30% coal_ore 26% lapis_ore 4%
+  Y -32..-17: 4241 ore - iron_ore 26% gold_ore 24% diamond_ore 21% redstone_ore 16%
+  Y -64..-49: 5361 ore - redstone_ore 49% diamond_ore 24% gold_ore 13% iron_ore 8%
 ```
+
+(A vanilla-config world on 1.21.1, 169 chunks around one point; the `y` output is cut to four of its bands.)
 
 - The **radius** is in chunks (default 8 = 128 blocks, up to 32), around your position, in your
   current dimension.
