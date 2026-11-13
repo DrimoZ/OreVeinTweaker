@@ -23,6 +23,7 @@ What actually changed between branches is loader and vanilla API, never the logi
 | Vein files, palettes | `net.minecraftforge.fml.loading.FMLPaths`, `ResourceLocation.tryParse`, `RegisterCommandsEvent` in `net.minecraftforge.event` | `net.neoforged.fml.loading.FMLPaths`, `net.neoforged.neoforge.event.RegisterCommandsEvent` | same, `Identifier.tryParse` |
 | `/benchgen` (dev) | `net.minecraft.world.level.chunk.ChunkStatus` | `...chunk.status.ChunkStatus` | same as 1.21.1 |
 | Census and strip commands | `ResourceLocation.tryParse`, `getMinBuildHeight()`, `hasPermission(2)`, `new ChunkPos(pos)`, `center.x`, `dimension().location()` | same | `Identifier.tryParse`, `getMinY()`, `Commands.hasPermission(LEVEL_GAMEMASTERS)`, `ChunkPos.containing(pos)`, `center.x()`, `dimension().identifier()` |
+| Census export | `new ClickEvent(Action.COPY_TO_CLIPBOARD, text)` | same | `new ClickEvent.CopyToClipboard(text)` |
 
 ## 26.3
 

@@ -6,8 +6,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -17,6 +19,11 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,20 +50,28 @@ public final class Census {
         event.getDispatcher().register(Commands.literal("oreveintweaker")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("census")
-                        .executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false))
+                        .executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false, false))
+                        .then(Commands.literal("export").executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false, true)))
                         .then(radius(Commands.literal("y"), true))
                         .then(radius(Commands.argument("radius", IntegerArgumentType.integer(1, MAX_RADIUS)), false))));
     }
 
-    /** `census y [radius]` and `census <radius>`: the same command, the first one by height. */
+    /** `census y [radius]` and `census <radius> [export]`: the same command, the first one by height. */
     private static ArgumentBuilder<CommandSourceStack, ?> radius(ArgumentBuilder<CommandSourceStack, ?> node, boolean byY) {
-        if (!byY) return node.executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), false));
-        return node.executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, true))
+        if (!byY) {
+            return node.executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), false, false))
+                    .then(Commands.literal("export").executes(ctx ->
+                            run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), false, true)));
+        }
+        return node.executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, true, false))
                 .then(Commands.argument("radius", IntegerArgumentType.integer(1, MAX_RADIUS))
-                        .executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), true)));
+                        .executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), true, false)));
     }
 
-    private static int run(CommandSourceStack src, int radius, boolean byY) {
+    /** One chunk's counts, for the export. */
+    private record ChunkCounts(int x, int z, Map<String, Long> counts) {}
+
+    private static int run(CommandSourceStack src, int radius, boolean byY, boolean export) {
         ServerLevel level = src.getLevel();
         ChunkPos center = ChunkPos.containing(BlockPos.containing(src.getPosition()));
         Set<Block> extra = new HashSet<>();
@@ -72,20 +87,44 @@ public final class Census {
         Set<String> ores = new HashSet<>();
         Map<BlockState, String> names = new HashMap<>();
         int loaded = 0;
+        // Export only: exact count per block and Y (the palette gives sections, so those holding a
+        // counted block are read block by block), and the counts of each chunk.
+        int minY = level.getMinY(), height = level.getHeight();
+        Map<String, long[]> exactByY = new TreeMap<>();
+        List<ChunkCounts> chunkRows = new ArrayList<>();
         for (int cx = center.x() - radius; cx <= center.x() + radius; cx++) {
             for (int cz = center.z() - radius; cz <= center.z() + radius; cz++) {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
                 if (chunk == null) continue;
                 loaded++;
+                Map<String, Long> chunkCounts = new TreeMap<>();
                 LevelChunkSection[] sections = chunk.getSections();
                 for (int i = 0; i < sections.length; i++) {
                     if (sections[i].hasOnlyAir()) continue;
-                    Map<String, Long> band = bands.computeIfAbsent(chunk.getSectionYFromSectionIndex(i), k -> new HashMap<>());
+                    int sectionY = chunk.getSectionYFromSectionIndex(i);
+                    Map<String, Long> band = bands.computeIfAbsent(sectionY, k -> new HashMap<>());
+                    boolean[] any = {false};
                     sections[i].getStates().count((state, n) -> {
                         String name = names.computeIfAbsent(state, s -> nameOf(s, extra, ores));
-                        if (!name.isEmpty()) band.merge(name, (long) n, Long::sum);
+                        if (name.isEmpty()) return;
+                        band.merge(name, (long) n, Long::sum);
+                        chunkCounts.merge(name, (long) n, Long::sum);
+                        any[0] = true;
                     });
+                    if (export && any[0]) {
+                        for (int ly = 0; ly < 16; ly++) {
+                            for (int lz = 0; lz < 16; lz++) {
+                                for (int lx = 0; lx < 16; lx++) {
+                                    String name = names.get(sections[i].getBlockState(lx, ly, lz));
+                                    if (name != null && !name.isEmpty()) {
+                                        exactByY.computeIfAbsent(name, k -> new long[height])[sectionY * 16 + ly - minY]++;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+                if (export) chunkRows.add(new ChunkCounts(cx, cz, chunkCounts));
             }
         }
 
@@ -110,7 +149,58 @@ public final class Census {
                     e.getValue() / (double) covered, share));
         });
         send(src, String.format(Locale.ROOT, "  total ore: %d (%.1f/chunk)", oreTotal, oreTotal / (double) covered));
+        if (export) export(src, level, minY, exactByY, chunkRows);
         return total.size();
+    }
+
+    /**
+     * Two CSV files in config/oreveintweaker/census/: the count of every block at every Y (one column per
+     * block, ready for a chart), and the count of every block in every chunk (ready for a pivot table).
+     * The by-height table also goes into a chat line that copies it to the clipboard of whoever clicks.
+     */
+    private static void export(CommandSourceStack src, ServerLevel level, int minY,
+                               Map<String, long[]> exactByY, List<ChunkCounts> chunks) {
+        StringBuilder byY = new StringBuilder("y");
+        exactByY.keySet().forEach(name -> byY.append(',').append(name));
+        byY.append('\n');
+        int height = level.getHeight();
+        for (int i = height - 1; i >= 0; i--) {
+            StringBuilder row = new StringBuilder().append(minY + i);
+            boolean any = false;
+            for (long[] counts : exactByY.values()) {
+                row.append(',').append(counts[i]);
+                any |= counts[i] != 0;
+            }
+            if (any) byY.append(row).append('\n');
+        }
+        StringBuilder byChunk = new StringBuilder("chunk_x,chunk_z,block,count\n");
+        for (ChunkCounts c : chunks) {
+            c.counts().forEach((name, n) -> byChunk.append(c.x()).append(',').append(c.z()).append(',')
+                    .append(name).append(',').append(n).append('\n'));
+        }
+
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        String prefix = "census-" + level.dimension().identifier().toString().replace(':', '_') + "-" + stamp;
+        Path dir = VeinFiles.dir().resolveSibling("census");
+        try {
+            Files.createDirectories(dir);
+            Path heightFile = dir.resolve(prefix + "-by-height.csv");
+            Path chunkFile = dir.resolve(prefix + "-by-chunk.csv");
+            Files.writeString(heightFile, byY.toString());
+            Files.writeString(chunkFile, byChunk.toString());
+            send(src, "Exported " + heightFile.toAbsolutePath());
+            send(src, "Exported " + chunkFile.toAbsolutePath());
+        } catch (IOException e) {
+            send(src, "Export failed: " + e.getMessage());
+            return;
+        }
+        // A chat line carries at most about 256 KB of text.
+        if (byY.length() <= 200_000) {
+            src.sendSuccess(() -> Component.literal("[Click to copy the by-height table]").withStyle(Style.EMPTY
+                    .withUnderlined(true).withClickEvent(new ClickEvent.CopyToClipboard(byY.toString()))), false);
+        } else {
+            send(src, "The by-height table is too big to copy from the chat: use the file.");
+        }
     }
 
     private static int byHeight(CommandSourceStack src, TreeMap<Integer, Map<String, Long>> bands, Set<String> ores) {

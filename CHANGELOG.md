@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `/oreveintweaker census [radius] export` also writes two CSV files to
+  `config/oreveintweaker/census/`: the count of every block at every Y (exact, one column per
+  block) and the count of every block in every chunk. A chat line copies the by-height table to the
+  clipboard.
+
 - New command `/oreveintweaker strip [radius]` (permission level 2): clears everything below Y 64
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own.
   Radius 0 to 16 chunks. No undo.
