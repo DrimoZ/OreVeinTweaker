@@ -223,18 +223,17 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
 actually holds around you, to check a config or compare two of them:
 
 ```
-> /oreveintweaker census 6
-Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
-  copper_ore: 18219 (107.8/chunk, 26.4% of ores)
-  coal_ore: 17195 (101.7/chunk, 24.9% of ores)
-  iron_ore: 14381 (85.1/chunk, 20.9% of ores)
-  redstone_ore: 6247 (37.0/chunk, 9.1% of ores)
-  gold_ore: 4381 (25.9/chunk, 6.4% of ores)
-  lapis_ore: 4302 (25.5/chunk, 6.2% of ores)
-  diamond_ore: 4216 (24.9/chunk, 6.1% of ores)
-  raw_copper_block: 23 (0.1/chunk)
-  raw_iron_block: 18 (0.1/chunk)
-  total ore: 68941 (407.9/chunk)
+> /oreveintweaker census 7
+Census minecraft:overworld: 225 of 225 chunks loaded within 112 blocks
+  ████░░░░░░  35.4%  coal_ore  35,147  (156.2/chunk)
+  ███░░░░░░░  26.2%  copper_ore  26,009  (115.6/chunk)
+  ██░░░░░░░░  16.2%  iron_ore  16,019  (71.2/chunk)
+  █░░░░░░░░░   7.9%  redstone_ore  7,835  (34.8/chunk)
+  █░░░░░░░░░   5.8%  gold_ore  5,763  (25.6/chunk)
+  █░░░░░░░░░   5.2%  lapis_ore  5,205  (23.1/chunk)
+  ░░░░░░░░░░   3.2%  diamond_ore  3,195  (14.2/chunk)
+                     raw_copper_block  112  (0.5/chunk)
+  total ore: 99,180 (440.8/chunk)
 
 > /oreveintweaker census y 6
   Y 48..63: 10525 ore - coal_ore 55% copper_ore 37% iron_ore 5% lapis_ore 3%
@@ -243,7 +242,8 @@ Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
   Y -64..-49: 5361 ore - redstone_ore 49% diamond_ore 24% gold_ore 13% iron_ore 8%
 ```
 
-(A vanilla-config world on 1.21.1, 169 chunks around one point; the `y` output is cut to four of its bands.)
+(A vanilla-config world, 225 chunks around one point, each ore in its own colour in game; the first
+output is cut to the main lines, and the `y` output, from an earlier run, to four of its bands.)
 
 - The **radius** is in chunks (default 8 = 128 blocks, up to 32), around your position, in your
   current dimension.
@@ -266,8 +266,30 @@ files to `config/oreveintweaker/census/` (on the server, for a dedicated one):
 - `...-by-chunk.csv`: `chunk_x,chunk_z,block,count`, one row per block per chunk: the generation works
   chunk by chunk, so this is the table for spreading, averages and outliers in a spreadsheet.
 
+- `...-info.txt`: what the files are about (dimension, seed, centre chunk, radius, chunks counted, date),
+  so they still make sense weeks later.
+
 A line `[Click to copy the by-height table]` in the chat also puts the by-height table in the clipboard
 of whoever clicks it, which works on a dedicated server too.
+
+**Comparing two configs.** `/oreveintweaker census save <name> [radius]` keeps the current per-chunk
+counts under a name (in `config/oreveintweaker/census/`); after changing the config and exploring
+new chunks, `/oreveintweaker census diff <name> [radius]` compares what is around you now with it, ore
+by ore, biggest change first:
+
+```
+> /oreveintweaker census diff vanilla 7
+Compared with "vanilla" (225 chunks then), per chunk:
+  coal_ore: 158.0 -> 108.4  (-31%)
+  copper_ore: 115.9 -> 90.9  (-22%)
+  iron_ore: 71.1 -> 78.1  (+10%)
+  amethyst_block: 9.0 -> 14.7  (+64%)
+```
+
+It compares per chunk, so the two areas need not be the same size, but they should be far apart
+enough to be new chunks and big enough to average out the terrain: a different spot of the same world
+easily differs by 10-30% on its own (the example above is two spots 640 blocks apart). Use a radius of
+10 or more, and read changes under about 15% as noise. Green is more, red is fewer.
 
 ### Seeing only the ores
 
