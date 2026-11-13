@@ -31,8 +31,10 @@ All defaults are vanilla: installing the mod changes nothing until you edit the 
 
 ## The config file
 
-Five sections: `[copper]` and `[iron]` for the vanilla veins, `[extra_1]` to `[extra_3]` for
-[new veins](#new-veins). Every option is also explained inside the file.
+Six sections: `[copper]` and `[iron]` for the vanilla veins, `[extra_1]` to `[extra_3]` for
+[new veins](#new-veins), and `[census]` for the [census command](#counting-what-generated). More new
+veins than three go in [their own files](#as-many-veins-as-you-want). Every option is also explained
+inside the file.
 
 | Option | Default | What it does |
 |---|---|---|
