@@ -40,9 +40,9 @@ Five sections: `[copper]` and `[iron]` for the vanilla veins, `[extra_1]` to `[e
 | `size` | `1.0` | Vein volume. `2.0` = about twice (thicker and more frequent), `0.5` = about half, `0` = none. `0` to `3`. |
 | `ore_amount` | `1.0` | Ore vs filler. `2.0` = twice the ore, `0` = filler only, `4.0` = mostly ore. `0` to `4`. |
 | `raw_block_amount` | `1.0` | Raw ore blocks among the ore. `5.0` = five times as many, `0` = none. `0` to `20`. |
-| `ore` | vanilla ore | Block used as ore. Any block id, from any mod. |
-| `raw_block` | vanilla raw block | Block used as raw ore block. |
-| `filler` | granite / tuff | Block the ore sits in. |
+| `ore` | vanilla ore | Block used as ore. Any block id, from any mod, or a [palette](#palettes). |
+| `raw_block` | vanilla raw block | Block used as raw ore block (a palette works too). |
+| `filler` | granite / tuff | Block the ore sits in (a palette works too). |
 | `min_y`, `max_y` | per slot | New veins only: their height range. |
 
 **Order of effects.** `size` decides where veins are. Inside a vein, `ore_amount` decides ore vs
@@ -71,6 +71,36 @@ The slots come filled with examples, so turning one on is a single line:
 | `extra_1` | deepslate gold ore | smooth basalt | Y -60 to -10 |
 | `extra_2` | coal ore | andesite | Y 0 to 60 |
 | `extra_3` | deepslate redstone ore | calcite | Y -60 to -20 |
+
+### As many veins as you want
+
+The config file has three slots; for more, put **one TOML file per vein** in
+`config/oreveintweaker/veins/`. A file takes the same options as an `[extra_N]` section (`min_y`,
+`max_y`, `ore` and `filler` are required, the rest has the defaults above) - the first start writes
+an `_example.toml` to copy:
+
+```toml
+# config/oreveintweaker/veins/zinc.toml
+size = 1.5
+ore = "create:zinc_ore*3, minecraft:copper_ore"
+filler = "minecraft:calcite"
+min_y = -20
+max_y = 60
+```
+
+- **`/oreveintweaker reload`** (operators) re-reads the folder and the config without a restart and
+  lists the veins that are on, and any file it had to skip, with the reason. A wrong file is skipped,
+  never half-applied; files starting with `_` and `enabled = false` are ignored.
+- A vein keeps its shape and its rolls whatever the other files are: adding or removing a file never
+  moves the others. Where two veins meet, the config's slots win, then files in alphabetical order.
+- Each vein costs generation time: measured on 1.20.1, about **1-2% per vein** at 50 to 60 blocks of
+  height. Past 16 veins the log says so. A taller vein than 110 blocks is two files, one above the other.
+
+### Palettes
+
+`ore`, `raw_block` and `filler` can list several blocks, with a weight after `*` (1 when left out):
+`"create:zinc_ore*3, minecraft:copper_ore"` is three zinc for one copper. It works in the config file
+and in vein files, and a single block behaves exactly as before.
 
 ## Recipes
 
