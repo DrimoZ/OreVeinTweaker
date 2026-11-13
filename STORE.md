@@ -42,7 +42,7 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 - 🧱 **Rebuild them** from any block of any mod - zinc veins for Create, gold veins...
 - ✨ **Add new veins** - as many as you want, one small file each, at the heights you choose
 - 🎲 **Mix blocks** - `"create:zinc_ore*3, minecraft:copper_ore"`: weighted palettes for ore, raw blocks and filler
-- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too
+- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too, and exports it to CSV
 
 One config file. No datapack. **Server-side only**: players don't need it.
 Works with terrain mods like Terralith and Tectonic.
@@ -58,7 +58,8 @@ Works with terrain mods like Terralith and Tectonic.
 ![Options](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_options.png)
 
 The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extra_3]` for new veins
-(off by default). Every option is explained inside the file.
+(off by default). Need more new veins? Put one small file each in `config/oreveintweaker/veins/`
+(the first launch writes an example). Every option is explained inside the file.
 
 | Option | Default | Effect |
 |---|---|---|
@@ -66,7 +67,7 @@ The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extr
 | `size` | `1.0` | Vein volume: `2` = twice, `0.5` = half |
 | `ore_amount` | `1.0` | Ore vs filler: `2` = twice the ore |
 | `raw_block_amount` | `1.0` | Raw blocks: `5` = five times as many |
-| `ore`, `raw_block`, `filler` | vanilla | Any block, from any mod |
+| `ore`, `raw_block`, `filler` | vanilla | Any block, from any mod, or a weighted list |
 | `min_y`, `max_y` | per slot | New veins only: their height |
 
 ![Recipes](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_recipes.png)
@@ -161,8 +162,8 @@ Shorter recipes, every option in detail and how precise the numbers are:
 - [ ] Create the GitHub repository `DrimoZ/OreVeinTweaker` and push all branches - the page links to
       its README as the full guide.
 - [ ] Replace the summary and the description with the ones above.
-- [ ] Gallery (optional): before/after screenshots of the same seed, taken in a dev run with `/strip`
-      (dev-only command that clears the stone around you so the veins show).
+- [ ] Gallery (optional): before/after screenshots of the same seed, taken with `/oreveintweaker strip`
+      (clears the stone around you so the veins show; use a throwaway world).
 - [ ] Three files, release type **Release**, each with the `## 1.1.0` section of `CHANGELOG.md`:
 
 | File | Game version | Loader | Java |

@@ -2,31 +2,26 @@
 
 ## Unreleased
 
-- `/oreveintweaker census [radius] export` also writes two CSV files to
-  `config/oreveintweaker/census/`: the count of every block at every Y (exact, one column per
-  block) and the count of every block in every chunk. A chat line copies the by-height table to the
-  clipboard.
-
-- New command `/oreveintweaker strip [radius]` (permission level 2): clears everything below Y 64
-  around you except ores, raw and storage blocks and bedrock, to see the veins on their own.
-  Radius 0 to 16 chunks. No undo.
-
-- Higher limits: `size` up to 4.5 (measured x4.49 the vein volume), `ore_amount` up to 5 (only ore, no
-  filler), `raw_block_amount` up to 50 (nearly every ore is a raw block). Past those values the
-  formulas are already at 100%.
-
-- Unlimited veins: one TOML file per vein in `config/oreveintweaker/veins/` (same options as
-  `[extra_N]`, an `_example.toml` is written on first start). `/oreveintweaker reload` re-reads them
-  and lists what is on, and any file it skipped with the reason. A vein keeps its shape whatever the
-  other files are. Measured cost: about 1-2% chunk generation time per vein.
-- Palettes: `ore`, `raw_block` and `filler` accept `"block*weight, block"` lists, in the config file
+- **More veins**: one TOML file per vein in `config/oreveintweaker/veins/`, as many as you want (same
+  options as `[extra_N]`; an `_example.toml` is written on first start). `/oreveintweaker reload`
+  re-reads them without a restart and lists what is on, and any file it skipped with the reason. A vein
+  keeps its shape whatever the other files are. Measured cost: about 1-2% of chunk generation time
+  per vein.
+- **Palettes**: `ore`, `raw_block` and `filler` accept `"block*weight, block"` lists, in the config file
   and in vein files. A single block generates exactly as before.
-
-- New command `/oreveintweaker census [radius]` (permission level 2): counts every ore, raw block and
-  storage block in the loaded chunks around you, with the count per chunk and each ore's share of the
-  ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32).
-  It counts what is in the world, so it also covers other mods' ores. `[census] blocks` adds any other
-  block to the count.
+- **Higher limits**: `size` up to 4.5 (measured x4.49 the vein volume), `ore_amount` up to 5 (only ore,
+  no filler), `raw_block_amount` up to 50 (nearly every ore is a raw block). Past those values the
+  formulas are already at 100%.
+- **New command `/oreveintweaker census [radius]`** (permission level 2): counts every ore, raw block and
+  storage block in the loaded chunks around you, with the average per chunk and each ore's share of the
+  ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32). It
+  counts what is in the world, so it covers other mods' ores too, and `[census] blocks` adds any other
+  block to the count. With `export`, it also writes two CSV files to `config/oreveintweaker/census/`
+  (the count of every block at every Y, exact, and of every block in every chunk), and a chat line
+  copies the by-height table to the clipboard.
+- **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
+  around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
+  to 16 chunks. No undo.
 
 ## 1.1.0
 
