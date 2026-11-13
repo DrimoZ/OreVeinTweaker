@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -120,6 +121,17 @@ public final class DevTools {
                 .then(Commands.argument("radius", IntegerArgumentType.integer(0, 8))
                         .executes(ctx -> strip(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))));
 
+        // Generates a size x size square of chunks and times it: what extra veins cost is measured in
+        // chunk generation time, so the same area is run with different configs on identical fresh worlds.
+        event.getDispatcher().register(Commands.literal("benchgen")
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.argument("size", IntegerArgumentType.integer(1, 64))
+                        .executes(ctx -> benchgen(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "size"), 1000, 1000))
+                        .then(Commands.argument("cx", IntegerArgumentType.integer())
+                                .then(Commands.argument("cz", IntegerArgumentType.integer())
+                                        .executes(ctx -> benchgen(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "size"),
+                                                IntegerArgumentType.getInteger(ctx, "cx"), IntegerArgumentType.getInteger(ctx, "cz")))))));
+
         event.getDispatcher().register(Commands.literal("veins")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(ctx -> veins(ctx.getSource()))
@@ -129,6 +141,24 @@ public final class DevTools {
                     ctx.getSource().sendSuccess(() -> Component.literal("Vein stats reset"), false);
                     return 1;
                 })));
+    }
+
+    private static int benchgen(CommandSourceStack src, int size, int cx, int cz) {
+        ServerLevel level = src.getLevel();
+        int generated = 0;
+        long start = System.nanoTime();
+        for (int x = cx; x < cx + size; x++) {
+            for (int z = cz; z < cz + size; z++) {
+                if (level.getChunkSource().getChunkNow(x, z) == null) generated++;
+                level.getChunk(x, z, ChunkStatus.FULL, true);
+            }
+        }
+        double ms = (System.nanoTime() - start) / 1e6;
+        String msg = String.format(java.util.Locale.ROOT, "benchgen: %d chunks in %.0f ms = %.2f ms/chunk (%d were not loaded)",
+                size * size, ms, ms / (size * size), generated);
+        LogUtils.getLogger().info("[{}] {}", OreVeinTweaker.MOD_ID, msg);
+        src.sendSuccess(() -> Component.literal(msg), false);
+        return size * size;
     }
 
     private static int veins(CommandSourceStack src) {

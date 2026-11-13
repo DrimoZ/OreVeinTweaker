@@ -20,6 +20,8 @@ What actually changed between branches is loader and vanilla API, never the logi
 | Ids | `new ResourceLocation(s)` | `ResourceLocation.parse(s)` | `Identifier.parse(s)` |
 | Mod constructor | `FMLJavaModLoadingContext.get()` | `(IEventBus, ModContainer)` | same |
 | Dev tools only | `hasPermission(2)`, `getMinBuildHeight()`, `new ChunkPos(pos)`, `FMLLoader.isProduction()` | same | `Commands.hasPermission(LEVEL_GAMEMASTERS)`, `getMinY()`, `ChunkPos.containing(pos)` + `x()`, `FMLLoader.getCurrent().isProduction()`, `ClickEvent.SuggestCommand` |
+| Vein files, palettes | `net.minecraftforge.fml.loading.FMLPaths`, `ResourceLocation.tryParse`, `RegisterCommandsEvent` in `net.minecraftforge.event` | `net.neoforged.fml.loading.FMLPaths`, `net.neoforged.neoforge.event.RegisterCommandsEvent` | same, `Identifier.tryParse` |
+| `/benchgen` (dev) | `net.minecraft.world.level.chunk.ChunkStatus` | `...chunk.status.ChunkStatus` | same as 1.21.1 |
 | Census command | `ResourceLocation.tryParse`, `hasPermission(2)`, `new ChunkPos(pos)`, `center.x`, `dimension().location()` | same | `Identifier.tryParse`, `Commands.hasPermission(LEVEL_GAMEMASTERS)`, `ChunkPos.containing(pos)`, `center.x()`, `dimension().identifier()` |
 
 ## 26.3

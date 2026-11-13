@@ -82,12 +82,13 @@ public final class VeinConfig {
                 b.comment("How many raw ore blocks the vein holds. 1.0 = vanilla (about 2 per 100 ore).",
                                 "0 = none, 5.0 = five times as many.")
                         .defineInRange("raw_block_amount", 1.0, 0.0, 20.0),
-                blockId(b.comment("Block used as the vein's ore. Any block id, from any mod."), "ore", ore),
-                blockId(b.comment("Block used as the vein's raw ore block."), "raw_block", raw),
-                blockId(b.comment("Block the ore sits in."), "filler", filler));
+                blockId(b.comment("Block used as the vein's ore. Any block id, from any mod.",
+                        "Several blocks make a palette: \"minecraft:copper_ore*3, create:zinc_ore\" is 3 copper for 1 zinc."), "ore", ore),
+                blockId(b.comment("Block used as the vein's raw ore block (a palette works here too)."), "raw_block", raw),
+                blockId(b.comment("Block the ore sits in (a palette works here too)."), "filler", filler));
     }
 
     private static ModConfigSpec.ConfigValue<String> blockId(ModConfigSpec.Builder b, String key, String def) {
-        return b.define(key, def, o -> o instanceof String s && Identifier.tryParse(s) != null);
+        return b.define(key, def, Palette::valid);
     }
 }

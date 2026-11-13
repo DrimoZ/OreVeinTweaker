@@ -1,8 +1,6 @@
 package dev.drimoz.oreveintweaker;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
@@ -41,13 +39,14 @@ public final class VeinRules {
 
     /** @param shift added to |toggle|: positive grows the veins, negative shrinks them, -inf removes them */
     private record Vein(boolean enabled, double shift, double oreAmount, double rawAmount,
-                        BlockState ore, BlockState raw, BlockState filler) {
-        BlockState block(Role role) {
-            return switch (role) {
+                        Palette ore, Palette raw, Palette filler) {
+        BlockState block(Role role, RandomSource random) {
+            Palette palette = switch (role) {
                 case ORE -> ore;
                 case RAW -> raw;
                 case FILLER -> filler;
             };
+            return palette.pick(random);
         }
     }
 
@@ -58,9 +57,36 @@ public final class VeinRules {
      * position: sideways so its ribbons do not follow copper's, and down so its Y range lands on
      * -60..50, the only heights where those noises are defined.
      */
-    private record Extra(int slot, Vein vein, int minY, int maxY) {
+    private static final class Extra {
+        /** Seeds the vein's own random stream: a vein keeps its ribbons and rolls when others come and go. */
+        final String key;
+        final int slot;
+        final Vein vein;
+        final int minY, maxY;
+        private volatile Seeded seeded;
+
+        private record Seeded(PositionalRandomFactory base, PositionalRandomFactory forked) {}
+
+        Extra(String key, int slot, Vein vein, int minY, int maxY) {
+            this.key = key;
+            this.slot = slot;
+            this.vein = vein;
+            this.minY = minY;
+            this.maxY = maxY;
+        }
+
         int dx() { return 10007 * (slot + 1); }
         int dz() { return 7001 * (slot + 1); }
+
+        /** The vanilla factory is per world: derive once, and again only if a different world asks. */
+        PositionalRandomFactory random(PositionalRandomFactory base) {
+            Seeded s = seeded;
+            if (s == null || s.base() != base) {
+                s = new Seeded(base, base.fromHashOf("oreveintweaker:" + key).forkPositional());
+                seeded = s;
+            }
+            return s.forked();
+        }
     }
 
     private record Rules(Map<Block, Entry> byVanillaBlock, Vein copper, Vein iron, List<Extra> extras) {}
@@ -68,6 +94,8 @@ public final class VeinRules {
     // Read from worldgen threads: the whole snapshot is swapped, never mutated in place. Null until
     // common setup, where the registries this resolves against are complete.
     private static volatile Rules rules;
+    private static volatile VeinFiles.Result files;
+    private static final int MANY_VEINS = 16;
 
     private VeinRules() {}
 
@@ -109,51 +137,43 @@ public final class VeinRules {
      * Vanilla's vein algorithm (OreVeinifier.create, unchanged since 1.18) for the extra veins, where
      * vanilla placed nothing. Copper's half of the toggle (> 0) only, so size 1 matches one vanilla type.
      *
-     * @param randoms one stream per extra slot, see {@link #extraRandoms}
+     * @param base vanilla's positional random: every extra vein derives its own stream from it
      * @return the block to place, or null when no extra vein is here
      */
     @Nullable
     public static BlockState applyExtra(DensityFunction.FunctionContext ctx, DensityFunction toggle,
-                                        DensityFunction ridged, DensityFunction gap, PositionalRandomFactory[] randoms) {
+                                        DensityFunction ridged, DensityFunction gap, PositionalRandomFactory base) {
         Rules r = rules;
         if (r == null) return null;
         int x = ctx.blockX(), y = ctx.blockY(), z = ctx.blockZ();
         for (Extra e : r.extras()) {
-            if (y < e.minY() || y > e.maxY()) continue;
-            var at = new DensityFunction.SinglePointContext(x + e.dx(), y - e.minY() - 60, z + e.dz());
+            if (y < e.minY || y > e.maxY) continue;
+            var at = new DensityFunction.SinglePointContext(x + e.dx(), y - e.minY - 60, z + e.dz());
             double t = toggle.compute(at);
             if (t <= 0) continue;
-            t += e.vein().shift();
-            int edge = Math.min(e.maxY() - y, y - e.minY());
+            t += e.vein.shift();
+            int edge = Math.min(e.maxY - y, y - e.minY);
             if (t + Mth.clampedMap(edge, 0, 20, -0.2, 0) < 0.4) continue;
-            RandomSource random = randoms[e.slot()].at(x, y, z);
+            RandomSource random = e.random(base).at(x, y, z);
             if (random.nextFloat() > 0.7F || ridged.compute(at) >= 0) continue;
             double richness = Mth.clampedMap(t, 0.4, 0.6, 0.1, 0.3);
             Role role = random.nextFloat() < richness && gap.compute(at) > -0.3
                     ? (random.nextFloat() < 0.02F ? Role.RAW : Role.ORE) : Role.FILLER;
-            return place(e.vein(), role, random);
+            return place(e.vein, role, random);
         }
         return null;
     }
 
     static List<String> extraNames() {
         Rules r = rules;
-        return r == null ? List.of() : r.extras().stream().map(e -> "extra_" + (e.slot() + 1)).toList();
+        return r == null ? List.of() : r.extras().stream().map(e -> e.key).toList();
     }
 
     /** Dev check: whether enabled extra vein {@code i} passes its size threshold at a Y -60..50 sample. */
     static boolean extraToggleHit(int i, DensityFunction toggle, int x, int sampleY, int z) {
         Extra e = rules.extras().get(i);
         double t = toggle.compute(new DensityFunction.SinglePointContext(x + e.dx(), sampleY, z + e.dz()));
-        return t > 0 && t + e.vein().shift() >= 0.4;
-    }
-
-    public static PositionalRandomFactory[] extraRandoms(PositionalRandomFactory vanilla) {
-        var randoms = new PositionalRandomFactory[VeinConfig.EXTRA.length];
-        for (int i = 0; i < randoms.length; i++) {
-            randoms[i] = vanilla.fromHashOf("oreveintweaker:extra_" + (i + 1)).forkPositional();
-        }
-        return randoms;
+        return t > 0 && t + e.vein.shift() >= 0.4;
     }
 
     /** Re-rolls a vein block's role for ore_amount and raw_block_amount, then picks the configured block. */
@@ -169,7 +189,7 @@ public final class VeinRules {
                 && random.nextDouble() < (v.rawAmount() - 1) * RAW_PER_ORE) {
             role = Role.RAW;
         }
-        return v.block(role);
+        return v.block(role, random);
     }
 
     public static void rebuild() {
@@ -192,25 +212,47 @@ public final class VeinRules {
                         i + 1, VeinConfig.MAX_EXTRA_HEIGHT, minY + VeinConfig.MAX_EXTRA_HEIGHT);
                 maxY = minY + VeinConfig.MAX_EXTRA_HEIGHT;
             }
-            extras.add(new Extra(i, vein(cfg.vein(), Blocks.STONE, Blocks.STONE, Blocks.STONE), minY, maxY));
+            extras.add(new Extra("extra_" + (i + 1), i, vein(cfg.vein(), Blocks.STONE, Blocks.STONE, Blocks.STONE), minY, maxY));
+        }
+        // Veins from files. The slot (which ribbons, which rolls) comes from the file name, so adding or
+        // removing another file never moves a vein.
+        VeinFiles.Result loaded = VeinFiles.load();
+        for (VeinFiles.Spec s : loaded.specs()) {
+            if (!s.enabled()) continue;
+            Palette ore = Palette.parse(s.ore(), Blocks.STONE);
+            extras.add(new Extra("vein:" + s.name(), VeinConfig.EXTRA.length + Math.floorMod(s.name().hashCode(), 50_000),
+                    new Vein(true, shiftFor(s.size()), s.oreAmount(), s.rawAmount(), ore,
+                            s.raw() == null ? ore : Palette.parse(s.raw(), Blocks.STONE),
+                            Palette.parse(s.filler(), Blocks.STONE)), s.minY(), s.maxY()));
+        }
+        files = loaded;
+        if (extras.size() > MANY_VEINS) {
+            LOG.warn("[{}] {} extra veins are on: each one adds about 1-2% to chunk generation time (measured)",
+                    OreVeinTweaker.MOD_ID, extras.size());
         }
         rules = new Rules(byVanillaBlock, copper, iron, List.copyOf(extras));
+    }
+
+    /** What the last rebuild found, for /oreveintweaker reload. */
+    static List<String> report() {
+        Rules r = rules;
+        VeinFiles.Result f = files;
+        List<String> lines = new ArrayList<>();
+        if (r != null) {
+            for (Extra e : r.extras()) {
+                lines.add(String.format(java.util.Locale.ROOT, "  %s: Y %d..%d", e.key, e.minY, e.maxY));
+            }
+        }
+        if (f != null) f.errors().forEach(err -> lines.add("  SKIPPED " + err));
+        lines.add(0, (r == null ? 0 : r.extras().size()) + " extra veins on, folder: " + VeinFiles.dir());
+        return lines;
     }
 
     private static Vein vein(VeinConfig.Vein cfg, Block ore, Block raw, Block filler) {
         // A disabled vein is also sized to zero, so it is never even computed.
         boolean on = cfg.enabled().get();
         return new Vein(on, shiftFor(on ? cfg.size().get() : 0), cfg.oreAmount().get(), cfg.rawBlockAmount().get(),
-                resolve(cfg.ore().get(), ore), resolve(cfg.rawBlock().get(), raw), resolve(cfg.filler().get(), filler));
-    }
-
-    private static BlockState resolve(String id, Block fallback) {
-        return BuiltInRegistries.BLOCK.getOptional(Identifier.parse(id))
-                .map(Block::defaultBlockState)
-                .orElseGet(() -> {
-                    LOG.warn("[{}] Unknown block '{}', keeping {}", OreVeinTweaker.MOD_ID, id,
-                            BuiltInRegistries.BLOCK.getKey(fallback));
-                    return fallback.defaultBlockState();
-                });
+                Palette.parse(cfg.ore().get(), ore), Palette.parse(cfg.rawBlock().get(), raw),
+                Palette.parse(cfg.filler().get(), filler));
     }
 }
