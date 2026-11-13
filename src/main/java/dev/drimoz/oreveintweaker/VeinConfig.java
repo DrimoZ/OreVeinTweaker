@@ -14,7 +14,7 @@ public final class VeinConfig {
     public static final Vein COPPER;
     public static final Vein IRON;
     public static final Extra[] EXTRA;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CENSUS_BLOCKS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> CENSUS_BLOCKS;
 
     public record Vein(ModConfigSpec.BooleanValue enabled,
                        ModConfigSpec.DoubleValue size,
