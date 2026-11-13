@@ -27,9 +27,11 @@ public final class VeinRules {
     // How much of the vein heights (Y -60..50) has |vein_toggle| >= threshold, measured with
     // DevTools.measureToggle over 200,000 samples. Vanilla's veins sit above 0.40, i.e. 20.2%.
     // Linear scaling of the toggle got this badly wrong: size 0.5 meant a 0.80 threshold, 30x less vein.
-    private static final double[] THRESHOLD = {0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
+    // The four entries below 0.10 (sizes up to 4.5) come from another world seed: the share at 0.10
+    // differs by 0.8% between seeds, which is the precision of this table.
+    private static final double[] THRESHOLD = {0.0, 0.025, 0.05, 0.075, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
             0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
-    private static final double[] SHARE = {0.75246, 0.63629, 0.52831, 0.42922, 0.34179, 0.26574, 0.20220,
+    private static final double[] SHARE = {1.0, 0.93883, 0.87884, 0.81793, 0.75246, 0.63629, 0.52831, 0.42922, 0.34179, 0.26574, 0.20220,
             0.14950, 0.10698, 0.07434, 0.05049, 0.03259, 0.02050, 0.01203, 0.00683, 0.00383, 0.00205};
     private static final double VANILLA_THRESHOLD = 0.40;
     private static final double VANILLA_SHARE = 0.20220;

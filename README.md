@@ -37,9 +37,9 @@ Five sections: `[copper]` and `[iron]` for the vanilla veins, `[extra_1]` to `[e
 | Option | Default | What it does |
 |---|---|---|
 | `enabled` | `true` (`false` for new veins) | `false` = this vein never generates; plain stone or deepslate is left in its place. |
-| `size` | `1.0` | Vein volume. `2.0` = about twice (thicker and more frequent), `0.5` = about half, `0` = none. `0` to `3`. |
-| `ore_amount` | `1.0` | Ore vs filler. `2.0` = twice the ore, `0` = filler only, `4.0` = mostly ore. `0` to `4`. |
-| `raw_block_amount` | `1.0` | Raw ore blocks among the ore. `5.0` = five times as many, `0` = none. `0` to `20`. |
+| `size` | `1.0` | Vein volume. `2.0` = about twice (thicker and more frequent), `0.5` = about half, `0` = none. `0` to `4.5`. |
+| `ore_amount` | `1.0` | Ore vs filler. `2.0` = twice the ore, `0` = filler only, `5.0` = only ore, no filler. `0` to `5`. |
+| `raw_block_amount` | `1.0` | Raw ore blocks among the ore. `5.0` = five times as many, `0` = none, `50` = nearly every ore is a raw block. `0` to `50`. |
 | `ore` | vanilla ore | Block used as ore. Any block id, from any mod, or a [palette](#palettes). |
 | `raw_block` | vanilla raw block | Block used as raw ore block (a palette works too). |
 | `filler` | granite / tuff | Block the ore sits in (a palette works too). |
@@ -248,7 +248,7 @@ The multipliers were calibrated against measurements of vanilla generation, then
 | Setting | Measured |
 |---|---|
 | `size = 2` / `0.5` | x2.00 / x0.49 the vein volume |
-| `size = 3` | x2.78 |
+| `size = 3` / `4.5` | x2.97 / x4.49 (blocks placed over 576 fresh chunks, one world) |
 | `ore_amount = 2` | x2.1 the ore |
 | `raw_block_amount = 5` | x5.2 the raw blocks |
 | new vein, `size = 1` | x1.00 vanilla copper's volume |
