@@ -256,6 +256,17 @@ Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
   `["minecraft:andesite", "minecraft:tuff"]` to see how much of your stone is that.
 - Percentages are shares of the ores only (extra blocks and raw blocks show counts).
 
+**Export.** `/oreveintweaker census [radius] export` prints the same report and also writes two CSV
+files to `config/oreveintweaker/census/` (on the server, for a dedicated one):
+
+- `...-by-height.csv`: one row per block height Y, one column per block, **exact to the block** (the
+  chat report goes by 16-block bands). Ready for a chart.
+- `...-by-chunk.csv`: `chunk_x,chunk_z,block,count`, one row per block per chunk: the generation works
+  chunk by chunk, so this is the table for spreading, averages and outliers in a spreadsheet.
+
+A line `[Click to copy the by-height table]` in the chat also puts the by-height table in the clipboard
+of whoever clicks it, which works on a dedicated server too.
+
 ### Seeing only the ores
 
 `/oreveintweaker strip [radius]` (operators) clears everything below Y 64 around you except ores, raw
