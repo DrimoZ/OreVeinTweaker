@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- New command `/oreveintweaker strip [radius] confirm` (permission level 2): clears everything below
+  Y 64 around you except ores, raw and storage blocks and bedrock, to see the veins on their own.
+  It warns first and needs the word `confirm`; radius 0 to 4 chunks.
+
 - Higher limits: `size` up to 4.5 (measured x4.49 the vein volume), `ore_amount` up to 5 (only ore, no
   filler), `raw_block_amount` up to 50 (nearly every ore is a raw block). Past those values the
   formulas are already at 100%.

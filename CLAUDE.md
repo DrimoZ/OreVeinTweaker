@@ -54,8 +54,9 @@ threads read it without locks.
 ## Dev tools
 
 Registered only outside production (`DevTools.ENABLED`):
-- `/strip [radius]` - clears everything below Y 64 except ores, raw blocks and bedrock (World Stripper
-  has no 1.20.1 build).
+- `/strip [radius]` - the public `/oreveintweaker strip` (`Strip`, needs `confirm`, radius up to 4)
+  without the confirmation and with a radius of up to 8.
+- `/benchgen <size> [cx cz]` - generates a square of fresh chunks and times it.
 - `/veins [reset]` - per vanilla vein block: how often vanilla placed it, what the mod placed instead,
   last position (click to tp); plus the totals actually placed.
 - On world load, the log gets the |vein_toggle| distribution and the vein volume ratio for the current

@@ -29,8 +29,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Dev-only tools, never active in a release jar:
- * /strip [radius]  - World Stripper replacement (no 1.20.1 build exists): removes everything below Y 64
- *                    except ores, raw/storage blocks and bedrock.
+ * /strip [radius]  - /oreveintweaker strip without the confirmation and with a radius of up to 8.
  * /veins [reset]   - what the vanilla vein generator wanted to place vs what this mod placed instead.
  */
 public final class DevTools {
@@ -118,9 +117,9 @@ public final class DevTools {
     static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("strip")
                 .requires(src -> src.hasPermission(2))
-                .executes(ctx -> strip(ctx.getSource(), 2))
+                .executes(ctx -> Strip.run(ctx.getSource(), 2))
                 .then(Commands.argument("radius", IntegerArgumentType.integer(0, 8))
-                        .executes(ctx -> strip(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))));
+                        .executes(ctx -> Strip.run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))));
 
         // Generates a size x size square of chunks and times it: what extra veins cost is measured in
         // chunk generation time, so the same area is run with different configs on identical fresh worlds.
@@ -183,36 +182,4 @@ public final class DevTools {
         return STATS.size();
     }
 
-    // ponytail: plain setBlock per block, a radius of 8 freezes the server for a while; fine for a dev tool.
-    private static int strip(CommandSourceStack src, int radius) {
-        ServerLevel level = src.getLevel();
-        ChunkPos center = new ChunkPos(BlockPos.containing(src.getPosition()));
-        BlockState air = Blocks.AIR.defaultBlockState();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int removed = 0;
-
-        for (int cx = center.x - radius; cx <= center.x + radius; cx++) {
-            for (int cz = center.z - radius; cz <= center.z + radius; cz++) {
-                for (int x = cx << 4; x < (cx << 4) + 16; x++) {
-                    for (int z = cz << 4; z < (cz << 4) + 16; z++) {
-                        for (int y = level.getMinBuildHeight(); y < STRIP_MAX_Y; y++) {
-                            BlockState state = level.getBlockState(pos.set(x, y, z));
-                            if (!state.isAir() && !keep(state)) {
-                                level.setBlock(pos, air, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
-                                removed++;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        int total = removed;
-        src.sendSuccess(() -> Component.literal("Stripped " + total + " blocks"), true);
-        return total;
-    }
-
-    private static boolean keep(BlockState state) {
-        return state.is(Tags.Blocks.ORES) || state.is(Tags.Blocks.STORAGE_BLOCKS) || state.is(Blocks.BEDROCK);
-    }
 }
