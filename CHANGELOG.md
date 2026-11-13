@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- New command `/oreveintweaker census [radius]` (permission level 2): counts every ore, raw block and
+  storage block in the loaded chunks around you, with the count per chunk and each ore's share of the
+  ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32).
+  It counts what is in the world, so it also covers other mods' ores. `[census] blocks` adds any other
+  block to the count.
+
 ## 1.1.0
 
 - New veins: `[extra_1]` to `[extra_3]` each add a new kind of large vein, off by default, with the
