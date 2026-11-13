@@ -72,9 +72,10 @@ public final class DevTools {
         ServerLevel level = event.getServer().overworld();
         DensityFunction toggle = level.getChunkSource().randomState().router().veinToggle();
         RandomSource random = RandomSource.create(42);
-        double[] thresholds = new double[17];
+        // Fine steps from 0 (sizes above 3 live below threshold 0.10), 0.05 steps above.
+        double[] thresholds = new double[22];
         long[] above = new long[thresholds.length];
-        for (int k = 0; k < thresholds.length; k++) thresholds[k] = 0.1 + k * 0.05;
+        for (int k = 0; k < thresholds.length; k++) thresholds[k] = k < 6 ? k * 0.025 : 0.15 + (k - 6) * 0.05;
         int samples = 200_000;
         // Vein volume per type, vanilla vs after this mod's resize: the ratio should read as `size`.
         long copperVanilla = 0, copperResized = 0, ironVanilla = 0, ironResized = 0;
@@ -108,7 +109,7 @@ public final class DevTools {
         StringBuilder table = new StringBuilder("[" + OreVeinTweaker.MOD_ID + "] |vein_toggle| >= a, over "
                 + samples + " samples, Y -60..50:");
         for (int k = 0; k < thresholds.length; k++) {
-            table.append(String.format(java.util.Locale.ROOT, "%n  a=%.2f  %.5f", thresholds[k],
+            table.append(String.format(java.util.Locale.ROOT, "%n  a=%.3f  %.5f", thresholds[k],
                     above[k] / (double) samples));
         }
         LogUtils.getLogger().info(table.toString());

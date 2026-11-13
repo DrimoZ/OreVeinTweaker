@@ -32,11 +32,11 @@ final class VeinFiles {
             # false = this vein is ignored.
             enabled = true
 
-            # Vein volume, 1.0 = as much as vanilla copper. Up to 3.0.
+            # Vein volume, 1.0 = as much as vanilla copper. Up to 4.5.
             size = 1.0
-            # 1.0 = vanilla (about 1 ore for 4 filler blocks). 0 = filler only, 4 = mostly ore.
+            # 1.0 = vanilla (about 1 ore for 4 filler blocks). 0 = filler only, 5 = only ore.
             ore_amount = 1.0
-            # 1.0 = vanilla (about 2 raw blocks per 100 ore). 0 = none, up to 20.
+            # 1.0 = vanilla (about 2 raw blocks per 100 ore). 0 = none, up to 50 (nearly all raw).
             raw_block_amount = 1.0
 
             # Blocks. Any block id from any mod. Several blocks make a palette: "block*weight, block*weight",
@@ -97,8 +97,8 @@ final class VeinFiles {
             maxY = minY + VeinConfig.MAX_EXTRA_HEIGHT;
         }
         return new Spec(name, enabled == null || (Boolean) enabled,
-                num(c, "size", 1, 0, VeinConfig.MAX_SIZE), num(c, "ore_amount", 1, 0, 4),
-                num(c, "raw_block_amount", 1, 0, 20),
+                num(c, "size", 1, 0, VeinConfig.MAX_SIZE), num(c, "ore_amount", 1, 0, VeinConfig.MAX_ORE_AMOUNT),
+                num(c, "raw_block_amount", 1, 0, VeinConfig.MAX_RAW_AMOUNT),
                 palette(c, "ore", true), palette(c, "raw_block", false), palette(c, "filler", true), minY, maxY);
     }
 
