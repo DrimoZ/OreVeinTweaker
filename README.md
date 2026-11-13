@@ -185,6 +185,32 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
     filler = "minecraft:dripstone_block"
 ```
 
+## Counting what generated
+
+`/oreveintweaker census [radius]` (operators, permission level 2) tells you how much ore the world
+actually holds around you, to check a config or compare two of them:
+
+```
+Census minecraft:overworld: 112 of 289 chunks loaded within 128 blocks (only loaded chunks are counted)
+  iron_ore: 4120 (36.8/chunk, 38.1% of ores)
+  copper_ore: 2310 (20.6/chunk, 21.4% of ores)
+  raw_iron_block: 31 (0.3/chunk)
+  total ore: 10810 (96.5/chunk)
+```
+
+- The **radius** is in chunks (default 8 = 128 blocks, up to 32), around your position, in your
+  current dimension.
+- `census y [radius]` gives the same by 16-block height band, with each band's top ores: the quick
+  way to see *where* an ore is.
+- It counts the blocks in the world, not what a generator placed: ores of every mod are included,
+  deepslate variants are merged with the stone ones, and it cannot tell a vein's ore from a normal
+  one.
+- It only reads **loaded** chunks and never generates any: the first line says how many it covered.
+  Fly around, or stand in the middle of a pregenerated area, for a bigger sample.
+- `[census] blocks` in the config adds any other block to the count, for example
+  `["minecraft:andesite", "minecraft:tuff"]` to see how much of your stone is that.
+- Percentages are shares of the ores only (extra blocks and raw blocks show counts).
+
 ## How precise is it?
 
 The multipliers were calibrated against measurements of vanilla generation, then checked in game:

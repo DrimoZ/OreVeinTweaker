@@ -41,6 +41,7 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 - 💎 **Richer or poorer** - more ore and raw blocks, or fewer
 - 🧱 **Rebuild them** from any block of any mod - zinc veins for Create, gold veins...
 - ✨ **Add new veins** - up to three new kinds, at the heights you choose
+- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too
 
 One config file. No datapack. **Server-side only**: players don't need it.
 Works with terrain mods like Terralith and Tectonic.
