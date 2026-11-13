@@ -42,7 +42,7 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 - 🧱 **Rebuild them** from any block of any mod - zinc veins for Create, gold veins...
 - ✨ **Add new veins** - as many as you want, one small file each, at the heights you choose
 - 🎲 **Mix blocks** - `"create:zinc_ore*3, minecraft:copper_ore"`: weighted palettes for ore, raw blocks and filler
-- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too, and exports it to CSV
+- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, by height too, exports it to CSV and compares two configs
 
 One config file. No datapack. **Server-side only**: players don't need it.
 Works with terrain mods like Terralith and Tectonic.
