@@ -262,10 +262,9 @@ Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
 and storage blocks, and bedrock: the veins are left floating, easy to see and to screenshot. It is
 meant for a throwaway test world:
 
-- **It cannot be undone**, and it takes anything built below Y 64 with it. So the command only warns;
-  it runs with `/oreveintweaker strip <radius> confirm`.
-- The radius is in chunks, 0 to 4 (default 2): it sets blocks one by one, and the server freezes
-  while it works.
+- **It cannot be undone**, and it takes anything built below Y 64 with it.
+- The radius is in chunks, 0 to 16 (default 2). It sets blocks one by one, so the server freezes
+  while it works: a few seconds for a small radius, minutes for 16.
 
 ## How precise is it?
 

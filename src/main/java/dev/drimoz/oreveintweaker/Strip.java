@@ -15,15 +15,13 @@ import net.minecraftforge.common.Tags;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 /**
- * /oreveintweaker strip [radius] confirm - removes everything below Y 64 except ores, raw/storage blocks
- * and bedrock around you, so only the ores are left to look at (and to /oreveintweaker census).
- *
- * It cannot be undone and it takes builds below Y 64 with it, so it only runs with the word "confirm",
- * and the radius stops at 4 chunks: it sets blocks one by one, which freezes the server for the duration.
+ * /oreveintweaker strip [radius] - removes everything below Y 64 except ores, raw/storage blocks and
+ * bedrock around you, so only the ores are left to look at (and to /oreveintweaker census).
+ * No undo, and builds below Y 64 go too: it is a test world tool, and operators only.
  */
 final class Strip {
     private static final int MAX_Y = 64;
-    private static final int MAX_RADIUS = 4;
+    private static final int MAX_RADIUS = 16;
     private static final int DEFAULT_RADIUS = 2;
 
     private Strip() {}
@@ -32,23 +30,12 @@ final class Strip {
         event.getDispatcher().register(Commands.literal("oreveintweaker")
                 .requires(src -> src.hasPermission(2))
                 .then(Commands.literal("strip")
-                        .executes(ctx -> warn(ctx.getSource(), DEFAULT_RADIUS))
+                        .executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(0, MAX_RADIUS))
-                                .executes(ctx -> warn(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))
-                                .then(Commands.literal("confirm")
-                                        .executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))))));
+                                .executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"))))));
     }
 
-    private static int warn(CommandSourceStack src, int radius) {
-        int side = radius * 2 + 1;
-        src.sendSuccess(() -> Component.literal("Strip deletes every block below Y " + MAX_Y
-                + " except ores, raw/storage blocks and bedrock, over " + side + "x" + side + " chunks around you."
-                + " Builds below Y " + MAX_Y + " are lost too, and there is no undo. To go ahead:"
-                + " /oreveintweaker strip " + radius + " confirm"), false);
-        return 0;
-    }
-
-    // ponytail: plain setBlock per block, so the server freezes while it runs: hence the radius cap.
+    // ponytail: plain setBlock per block, so the server freezes while it runs (a radius of 16 is minutes).
     static int run(CommandSourceStack src, int radius) {
         ServerLevel level = src.getLevel();
         ChunkPos center = new ChunkPos(BlockPos.containing(src.getPosition()));
