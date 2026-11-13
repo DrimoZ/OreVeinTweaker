@@ -3,6 +3,8 @@ package dev.drimoz.oreveintweaker;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 
+import java.util.List;
+
 public final class VeinConfig {
     public static final double MAX_SIZE = 3.0;
     // Vanilla's vein noises are only defined over Y -60..50: an extra vein is that slice, moved.
@@ -12,6 +14,7 @@ public final class VeinConfig {
     public static final Vein COPPER;
     public static final Vein IRON;
     public static final Extra[] EXTRA;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CENSUS_BLOCKS;
 
     public record Vein(ForgeConfigSpec.BooleanValue enabled,
                        ForgeConfigSpec.DoubleValue size,
@@ -37,6 +40,10 @@ public final class VeinConfig {
                 extra(b, 1, "minecraft:deepslate_gold_ore", "minecraft:raw_gold_block", "minecraft:smooth_basalt", -60, -10),
                 extra(b, 2, "minecraft:coal_ore", "minecraft:coal_block", "minecraft:andesite", 0, 60),
                 extra(b, 3, "minecraft:deepslate_redstone_ore", "minecraft:redstone_block", "minecraft:calcite", -60, -20)};
+        CENSUS_BLOCKS = b.comment("Extra blocks counted by /oreveintweaker census, next to every ore and raw/storage block.",
+                        "Any block id, from any mod, e.g. [\"minecraft:andesite\", \"minecraft:tuff\"].")
+                .push("census").defineListAllowEmpty("blocks", List.of(), o -> o instanceof String);
+        b.pop();
         SPEC = b.build();
     }
 
