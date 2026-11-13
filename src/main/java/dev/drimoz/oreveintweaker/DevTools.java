@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Dev-only tools, never active in a release jar:
- * /strip [radius]  - /oreveintweaker strip without the confirmation and with a radius of up to 8.
  * /veins [reset]   - what the vanilla vein generator wanted to place vs what this mod placed instead.
  */
 public final class DevTools {
@@ -115,12 +114,6 @@ public final class DevTools {
     }
 
     static void register(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("strip")
-                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .executes(ctx -> Strip.run(ctx.getSource(), 2))
-                .then(Commands.argument("radius", IntegerArgumentType.integer(0, 8))
-                        .executes(ctx -> Strip.run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius")))));
-
         // Generates a size x size square of chunks and times it: what extra veins cost is measured in
         // chunk generation time, so the same area is run with different configs on identical fresh worlds.
         event.getDispatcher().register(Commands.literal("benchgen")
