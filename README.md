@@ -256,6 +256,17 @@ Census minecraft:overworld: 169 of 169 chunks loaded within 96 blocks
   `["minecraft:andesite", "minecraft:tuff"]` to see how much of your stone is that.
 - Percentages are shares of the ores only (extra blocks and raw blocks show counts).
 
+### Seeing only the ores
+
+`/oreveintweaker strip [radius]` (operators) clears everything below Y 64 around you except ores, raw
+and storage blocks, and bedrock: the veins are left floating, easy to see and to screenshot. It is
+meant for a throwaway test world:
+
+- **It cannot be undone**, and it takes anything built below Y 64 with it. So the command only warns;
+  it runs with `/oreveintweaker strip <radius> confirm`.
+- The radius is in chunks, 0 to 4 (default 2): it sets blocks one by one, and the server freezes
+  while it works.
+
 ## How precise is it?
 
 The multipliers were calibrated against measurements of vanilla generation, then checked in game:
