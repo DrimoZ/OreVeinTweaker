@@ -1,15 +1,19 @@
 package dev.drimoz.oreveintweaker;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -52,6 +56,8 @@ public final class Census {
                 .then(Commands.literal("census")
                         .executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false, false))
                         .then(Commands.literal("export").executes(ctx -> run(ctx.getSource(), DEFAULT_RADIUS, false, true)))
+                        .then(named("save", true))
+                        .then(named("diff", false))
                         .then(radius(Commands.literal("y"), true))
                         .then(radius(Commands.argument("radius", IntegerArgumentType.integer(1, MAX_RADIUS)), false))));
     }
@@ -68,10 +74,32 @@ public final class Census {
                         .executes(ctx -> run(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), true, false)));
     }
 
+    /** `census save <name> [radius]` keeps the counts under a name; `census diff <name> [radius]` compares them to now. */
+    private static ArgumentBuilder<CommandSourceStack, ?> named(String word, boolean save) {
+        return Commands.literal(word).then(Commands.argument("name", StringArgumentType.word())
+                .executes(ctx -> named(ctx, DEFAULT_RADIUS, save))
+                .then(Commands.argument("radius", IntegerArgumentType.integer(1, MAX_RADIUS))
+                        .executes(ctx -> named(ctx, IntegerArgumentType.getInteger(ctx, "radius"), save))));
+    }
+
+    private static int named(CommandContext<CommandSourceStack> ctx, int radius, boolean save) {
+        String name = StringArgumentType.getString(ctx, "name");
+        if (!name.matches("[A-Za-z0-9_-]{1,32}")) {
+            send(ctx.getSource(), "A name is letters, digits, - and _ (32 at most).");
+            return 0;
+        }
+        return save ? run(ctx.getSource(), radius, false, false, name, null)
+                : run(ctx.getSource(), radius, false, false, null, name);
+    }
+
     /** One chunk's counts, for the export. */
     private record ChunkCounts(int x, int z, Map<String, Long> counts) {}
 
     private static int run(CommandSourceStack src, int radius, boolean byY, boolean export) {
+        return run(src, radius, byY, export, null, null);
+    }
+
+    private static int run(CommandSourceStack src, int radius, boolean byY, boolean export, String save, String diff) {
         ServerLevel level = src.getLevel();
         ChunkPos center = ChunkPos.containing(BlockPos.containing(src.getPosition()));
         Set<Block> extra = new HashSet<>();
@@ -139,18 +167,98 @@ public final class Census {
 
         Map<String, Long> total = new HashMap<>();
         bands.values().forEach(band -> band.forEach((k, v) -> total.merge(k, v, Long::sum)));
+        if (save != null) return save(src, save, total, loaded);
+        if (diff != null) return diff(src, diff, total, loaded);
         long oreTotal = total.entrySet().stream().filter(e -> ores.contains(e.getKey()))
                 .mapToLong(Map.Entry::getValue).sum();
         int covered = loaded;
         total.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).forEach(e -> {
-            String share = ores.contains(e.getKey())
-                    ? String.format(Locale.ROOT, ", %.1f%% of ores", 100.0 * e.getValue() / oreTotal) : "";
-            send(src, String.format(Locale.ROOT, "  %s: %d (%.1f/chunk%s)", e.getKey(), e.getValue(),
-                    e.getValue() / (double) covered, share));
+            String name = e.getKey();
+            MutableComponent line;
+            if (ores.contains(name)) {
+                double share = 100.0 * e.getValue() / oreTotal;
+                line = Component.literal("  " + bar(share) + String.format(Locale.ROOT, " %5.1f%%  %s", share, name))
+                        .withStyle(colorOf(name));
+            } else {
+                line = Component.literal("  " + " ".repeat(BAR) + "         " + name).withStyle(ChatFormatting.DARK_GRAY);
+            }
+            line.append(Component.literal(String.format(Locale.ROOT, "  %,d  (%.1f/chunk)", e.getValue(),
+                    e.getValue() / (double) covered)).withStyle(ChatFormatting.GRAY));
+            src.sendSuccess(() -> line, false);
         });
-        send(src, String.format(Locale.ROOT, "  total ore: %d (%.1f/chunk)", oreTotal, oreTotal / (double) covered));
-        if (export) export(src, level, minY, exactByY, chunkRows);
+        send(src, String.format(Locale.ROOT, "  total ore: %,d (%.1f/chunk)", oreTotal, oreTotal / (double) covered));
+        if (export) export(src, level, minY, exactByY, chunkRows, center, radius, loaded);
         return total.size();
+    }
+
+    private static final int BAR = 10;
+
+    private static final Map<String, ChatFormatting> COLORS = Map.of(
+            "coal", ChatFormatting.DARK_GRAY, "copper", ChatFormatting.GOLD, "iron", ChatFormatting.GRAY,
+            "gold", ChatFormatting.YELLOW, "redstone", ChatFormatting.RED, "lapis", ChatFormatting.BLUE,
+            "diamond", ChatFormatting.AQUA, "emerald", ChatFormatting.GREEN);
+
+    private static String bar(double percent) {
+        int full = (int) Math.round(percent / 100 * BAR);
+        return "█".repeat(full) + "░".repeat(BAR - full);
+    }
+
+    private static ChatFormatting colorOf(String name) {
+        for (var e : COLORS.entrySet()) if (name.contains(e.getKey())) return e.getValue();
+        return ChatFormatting.WHITE;
+    }
+
+    private static Path saveFile(String name) {
+        return VeinFiles.dir().resolveSibling("census").resolve("saved-" + name + ".csv");
+    }
+
+    /** First line: chunks counted; then block,total. Compared per chunk, so the area may differ a little. */
+    private static int save(CommandSourceStack src, String name, Map<String, Long> total, int loaded) {
+        StringBuilder out = new StringBuilder("loaded,").append(loaded).append('\n');
+        total.forEach((k, v) -> out.append(k).append(',').append(v).append('\n'));
+        try {
+            Path file = saveFile(name);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, out.toString());
+        } catch (IOException e) {
+            send(src, "Save failed: " + e.getMessage());
+            return 0;
+        }
+        send(src, "Saved \"" + name + "\". Later: /oreveintweaker census diff " + name);
+        return total.size();
+    }
+
+    private static int diff(CommandSourceStack src, String name, Map<String, Long> total, int loaded) {
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(saveFile(name));
+        } catch (IOException e) {
+            send(src, "No saved census called \"" + name + "\": run /oreveintweaker census save " + name + " first.");
+            return 0;
+        }
+        double before = Double.parseDouble(lines.get(0).substring("loaded,".length()));
+        Map<String, Double> old = new HashMap<>();
+        for (String l : lines.subList(1, lines.size())) {
+            int comma = l.lastIndexOf(',');
+            old.put(l.substring(0, comma), Long.parseLong(l.substring(comma + 1)) / before);
+        }
+        Map<String, Double> now = new HashMap<>();
+        total.forEach((k, v) -> now.put(k, v / (double) loaded));
+        Set<String> names = new HashSet<>(old.keySet());
+        names.addAll(now.keySet());
+        // Under 0.05 a chunk, a block is noise: "0.0 -> 0.0 (-100%)" says nothing.
+        names.removeIf(n -> old.getOrDefault(n, 0.0) < 0.05 && now.getOrDefault(n, 0.0) < 0.05);
+        send(src, "Compared with \"" + name + "\" (" + (int) before + " chunks then), per chunk:");
+        names.stream().sorted((a, b) -> Double.compare(Math.abs(now.getOrDefault(b, 0.0) - old.getOrDefault(b, 0.0)),
+                Math.abs(now.getOrDefault(a, 0.0) - old.getOrDefault(a, 0.0)))).forEach(n -> {
+            double was = old.getOrDefault(n, 0.0), is = now.getOrDefault(n, 0.0);
+            String change = was == 0 ? "new" : String.format(Locale.ROOT, "%+.0f%%", 100 * (is - was) / was);
+            ChatFormatting color = Math.abs(is - was) <= 0.005 * Math.max(was, is) ? ChatFormatting.GRAY
+                    : is > was ? ChatFormatting.GREEN : ChatFormatting.RED;
+            src.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  %s: %.1f -> %.1f  (%s)", n, was, is, change))
+                    .withStyle(color), false);
+        });
+        return names.size();
     }
 
     /**
@@ -159,7 +267,8 @@ public final class Census {
      * The by-height table also goes into a chat line that copies it to the clipboard of whoever clicks.
      */
     private static void export(CommandSourceStack src, ServerLevel level, int minY,
-                               Map<String, long[]> exactByY, List<ChunkCounts> chunks) {
+                               Map<String, long[]> exactByY, List<ChunkCounts> chunks,
+                               ChunkPos center, int radius, int loaded) {
         StringBuilder byY = new StringBuilder("y");
         exactByY.keySet().forEach(name -> byY.append(',').append(name));
         byY.append('\n');
@@ -188,6 +297,10 @@ public final class Census {
             Path chunkFile = dir.resolve(prefix + "-by-chunk.csv");
             Files.writeString(heightFile, byY.toString());
             Files.writeString(chunkFile, byChunk.toString());
+            // What the files are about, for when they are opened weeks later.
+            Files.writeString(dir.resolve(prefix + "-info.txt"), "dimension: " + level.dimension().identifier()
+                    + "\nseed: " + level.getSeed() + "\ncenter chunk: " + center.x() + " " + center.z()
+                    + "\nradius: " + radius + " chunks\nchunks counted: " + loaded + "\ndate: " + stamp + "\n");
             send(src, "Exported " + heightFile.toAbsolutePath());
             send(src, "Exported " + chunkFile.toAbsolutePath());
         } catch (IOException e) {

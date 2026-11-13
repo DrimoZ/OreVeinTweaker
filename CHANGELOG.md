@@ -17,8 +17,10 @@
   ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32). It
   counts what is in the world, so it covers other mods' ores too, and `[census] blocks` adds any other
   block to the count. With `export`, it also writes two CSV files to `config/oreveintweaker/census/`
-  (the count of every block at every Y, exact, and of every block in every chunk), and a chat line
-  copies the by-height table to the clipboard.
+  (the count of every block at every Y, exact, and of every block in every chunk) and an info file (seed,
+  centre, radius, date), and a chat line copies the by-height table to the clipboard. The report shows
+  each ore's share as a coloured bar. `census save <name>` keeps the counts and `census diff <name>`
+  compares them with what is around you now, ore by ore.
 - **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
   to 16 chunks. No undo.
