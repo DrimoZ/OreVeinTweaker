@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Higher limits: `size` up to 4.5 (measured x4.49 the vein volume), `ore_amount` up to 5 (only ore, no
+  filler), `raw_block_amount` up to 50 (nearly every ore is a raw block). Past those values the
+  formulas are already at 100%.
+
 - Unlimited veins: one TOML file per vein in `config/oreveintweaker/veins/` (same options as
   `[extra_N]`, an `_example.toml` is written on first start). `/oreveintweaker reload` re-reads them
   and lists what is on, and any file it skipped with the reason. A vein keeps its shape whatever the

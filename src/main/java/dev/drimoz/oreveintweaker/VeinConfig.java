@@ -6,7 +6,12 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import java.util.List;
 
 public final class VeinConfig {
-    public static final double MAX_SIZE = 3.0;
+    // Past ~3 the gain flattens: most of the underground is already vein. 4.5 is where the measured
+    // table (VeinRules.SHARE) still resolves the toggle; ore_amount 5 and raw 50 are where the formulas
+    // in VeinRules.place reach 100% ore / 98% raw, so more would change nothing.
+    public static final double MAX_SIZE = 4.5;
+    public static final double MAX_ORE_AMOUNT = 5.0;
+    public static final double MAX_RAW_AMOUNT = 50.0;
     // Vanilla's vein noises are only defined over Y -60..50: an extra vein is that slice, moved.
     public static final int MAX_EXTRA_HEIGHT = 110;
 
@@ -77,11 +82,11 @@ public final class VeinConfig {
                                 "0 = none at all. Bigger veins are also slightly richer at their core.")
                         .defineInRange("size", 1.0, 0.0, MAX_SIZE),
                 b.comment("How much of the vein is ore. 1.0 = vanilla (about 1 ore for 4 filler blocks).",
-                                "0 = filler only, 2.0 = twice as much ore, 4.0 = mostly ore.")
-                        .defineInRange("ore_amount", 1.0, 0.0, 4.0),
+                                "0 = filler only, 2.0 = twice as much ore, 5.0 = no filler at all, only ore.")
+                        .defineInRange("ore_amount", 1.0, 0.0, MAX_ORE_AMOUNT),
                 b.comment("How many raw ore blocks the vein holds. 1.0 = vanilla (about 2 per 100 ore).",
-                                "0 = none, 5.0 = five times as many.")
-                        .defineInRange("raw_block_amount", 1.0, 0.0, 20.0),
+                                "0 = none, 5.0 = five times as many, 50.0 = nearly every ore is a raw block.")
+                        .defineInRange("raw_block_amount", 1.0, 0.0, MAX_RAW_AMOUNT),
                 blockId(b.comment("Block used as the vein's ore. Any block id, from any mod.",
                         "Several blocks make a palette: \"minecraft:copper_ore*3, create:zinc_ore\" is 3 copper for 1 zinc."), "ore", ore),
                 blockId(b.comment("Block used as the vein's raw ore block (a palette works here too)."), "raw_block", raw),
