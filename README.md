@@ -64,8 +64,9 @@ every option above, plus `min_y` and `max_y`:
 - A vein is at most **110 blocks tall** (`max_y - min_y`): vanilla's vein noises only exist over
   that height. Veins thin out over the 20 blocks at each end, like vanilla ones.
 - They are built by vanilla's own vein algorithm, with their own ribbons: they do not follow the
-  copper or iron veins. `size = 1` gives the same vein volume as vanilla copper, which comes out as
-  thinner veins in blocks (see [How precise is it?](#how-precise-is-it)).
+  copper or iron veins. `size = 1` gives about as much vein as one vanilla type: they read the vein
+  noises at the heights of iron's veins, where measured over a large area they come out at about four
+  fifths of copper's volume and the same as iron's (see [How precise is it?](#how-precise-is-it)).
 - Where a new vein crosses a vanilla one, the vanilla vein wins.
 - They generate wherever large veins do - the Overworld, unless a datapack says otherwise.
 
@@ -357,15 +358,22 @@ two ways:
 | `size = 4.5` | x4.33 | x4.49 |
 | `ore_amount = 2` | | x1.86 the ore |
 | `raw_block_amount = 5` | | x4.55 the raw blocks |
-| new vein, `size = 1` | x1.00 vanilla copper | about x0.2 vanilla copper's blocks |
+| new vein, `size = 1` | x1.00 vanilla copper (noise sample, all heights) | see below |
 
 Measured on 1.20.1. On 26.1 the volume figures are the same, and the blocks placed come out at x1.88
 for `size = 2` and x4.26 for `size = 4.5`: its terrain has fewer veins to begin with, so the blocks
 counted differ even though the mod's calibration is identical. Read the rows as "about": another seed
-moves them by a few percent (the raw blocks are rare, a few
-hundred over the whole sample). Bigger veins are also slightly richer at their core, as vanilla ones
-are: that is how the generator works. A new vein has the volume of a copper vein but, measured, about a
-fifth of its blocks.
+moves them by a few percent (the raw blocks are rare, a few hundred over the whole sample). Bigger
+veins are also slightly richer at their core, as vanilla ones are: that is how the generator works.
+
+**Counts in one area say little on their own.** Veins are long ribbons, so a 16 x 16 chunk area holds
+only a few of them: over six such areas of one world, vanilla copper veins went from 1 to 53,818 blocks,
+and a new vein's blocks, against copper's, from x0.22 to x25 (x0.32 over the six together). That is why
+every row above compares a setting with the default on the **same** terrain. It is also why a new vein
+counted over a single small area can look several times thinner than copper without being so: measured
+on the noise itself, over 300,000 points, a new vein at `size = 1` comes out at x0.80 of copper's
+volume and x1.01 of iron's, because it reads the noise at iron's heights, where it is a little weaker
+than at copper's.
 
 ## Compatibility
 
