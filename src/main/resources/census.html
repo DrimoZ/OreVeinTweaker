@@ -11,7 +11,7 @@
 @media (prefers-color-scheme:dark){:root{--bg:#161614;--surface:#1f1f1c;--ink:#ecece5;--mute:#a3a39a;--line:#383833;--hover:#292925;--select:#243528;--accent:#7fd99a}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/24px system-ui,Segoe UI,sans-serif}
-main{max-width:1200px;margin:0 auto;padding:32px 16px 64px}
+main{max-width:none;margin:0 auto;padding:32px 16px 64px}
 h1{font-size:20px;line-height:28px;margin:0}
 h2{font-size:15px;line-height:24px;margin:0}
 .mute{color:var(--mute);font-size:13px;line-height:20px}
@@ -24,9 +24,8 @@ header p{margin:4px 0 0}
 .tools{display:flex;gap:16px;align-items:center;margin-bottom:16px}
 .tools input[type=search]{flex:1 1 240px;max-width:360px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 .tools label{color:var(--mute);font-size:13px;display:flex;gap:8px;align-items:center}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
-@media(max-width:920px){.layout{grid-template-columns:1fr}aside{position:static!important}}
-.tablewrap{background:var(--surface);border-radius:8px;overflow:auto;max-height:78vh}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
+.tablewrap{background:var(--surface);border-radius:8px;overflow:auto}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 th,td{height:32px;padding:0 12px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
@@ -41,9 +40,13 @@ tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .dot{display:inline-block;width:8px;height:8px;margin-right:12px;vertical-align:0}
 .who{color:var(--mute);margin-left:8px;font-size:12px}
 .mark{display:inline-block;height:8px;vertical-align:baseline;margin-right:8px}
-aside{position:sticky;top:16px;background:var(--surface);border-radius:8px;padding:24px}
-aside h3{font-size:12px;line-height:20px;font-weight:600;color:var(--mute);margin:24px 0 8px}
-aside .lead{margin:4px 0 0}
+/* The detail is a row of its own under the clicked ore: it opens where the eye already is. */
+tbody tr.detail,tbody tr.detail:hover{cursor:default;background:var(--select)}
+tr.detail td{height:auto;padding:0;white-space:normal;text-align:left}
+#detail{display:flex;flex-wrap:wrap;gap:0 48px;align-items:flex-start;padding:8px 12px 24px 32px}
+#detail>div{flex:1 1 280px;max-width:420px}
+#detail h3{font-size:12px;line-height:20px;font-weight:600;color:var(--mute);margin:16px 0 8px}
+#detail .lead{margin:4px 0 0}
 .hint{color:var(--mute);padding:8px 0}
 svg text{fill:var(--mute);font-size:11px}
 canvas{width:100%;image-rendering:pixelated;border-radius:4px;display:block}
@@ -61,13 +64,13 @@ footer{color:var(--mute);font-size:12px;margin-top:24px}
 <div class="tools">
   <input type="search" id="q" placeholder="Search an ore" aria-label="Search an ore">
   <label><input type="checkbox" id="allBlocks"> Also raw and storage blocks</label>
+  <span class="mute">Click an ore to see where it generates.</span>
 </div>
 <div class="layout">
   <div class="tablewrap"><table>
     <thead><tr id="head"></tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
-  <aside id="detail" aria-live="polite"><div class="hint">Select an ore to see where it generates.</div></aside>
 </div>
 <footer>Ore Vein Tweaker. These are the blocks found in the world, whatever generated them, in the chunks that were loaded.</footer>
 </main>
@@ -165,12 +168,19 @@ function renderRows() {
       + "<td>" + fmt(o.total) + "</td><td>" + fmt1(o.perChunk) + "</td><td>"
       + (o.share == null ? '<span class="mute">-</span>' : '<span class="mark" style="width:' + Math.max(2, 64 * o.share / maxShare) + 'px;background:' + o.color + '"></span>' + o.share.toFixed(1) + "%")
       + "</td><td>" + (o.peak == null ? "-" : o.peak) + "</td><td>" + spark(o) + "</td>";
-    const pick = () => { selected = o; history.replaceState(null, "", "#" + o.id); renderRows(); renderDetail(); const r = $("rows").children[i]; if (r) r.focus({preventScroll: true}); };
+    // Clicking the open ore closes it. The detail row is never focusable, so arrows skip it.
+    const pick = () => { selected = o === selected ? null : o; history.replaceState(null, "", selected ? "#" + o.id : location.pathname); renderRows(); const r = $("rows").querySelectorAll("tr[tabindex]")[i]; if (r) r.focus({preventScroll: true}); };
     tr.onclick = pick;
+    const step = (from, dir) => { let n = from[dir]; while (n && !n.hasAttribute("tabindex")) n = n[dir]; return n; };
     tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
-      else if (e.key === "ArrowDown" && tr.nextSibling) { e.preventDefault(); tr.nextSibling.focus(); }
-      else if (e.key === "ArrowUp" && tr.previousSibling) { e.preventDefault(); tr.previousSibling.focus(); } };
+      else if (e.key === "ArrowDown") { e.preventDefault(); const n = step(tr, "nextSibling"); if (n) n.focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); const n = step(tr, "previousSibling"); if (n) n.focus(); } };
     $("rows").appendChild(tr);
+    if (o === selected) {
+      const d = document.createElement("tr"); d.className = "detail";
+      d.innerHTML = '<td colspan="6"><div id="detail" aria-live="polite"></div></td>';
+      $("rows").appendChild(d); renderDetail();
+    }
   });
 }
 function profile(o) {
@@ -211,20 +221,20 @@ function renderDetail() {
   if (o.y && o.total) { let c = 0, lo = null, hi = null;
     o.y.forEach((n, i) => { c += n; if (lo === null && c >= o.total / 4) lo = o.y0 + i; if (hi === null && c >= o.total * 3 / 4) hi = o.y0 + i; });
     half = "Half of it lies between Y " + lo + " and " + hi + ". "; }
-  $("detail").innerHTML = "<h2>" + readable(o.id) + ' <span class="mute">' + o.id + "</span></h2>"
+  $("detail").innerHTML = "<div><h2>" + readable(o.id) + ' <span class="mute">' + o.id + "</span></h2>"
     + '<p class="lead">' + fmt(o.total) + " blocks, " + fmt1(o.perChunk) + " per chunk" + (o.share != null ? ", " + o.share.toFixed(1) + "% of ores" : "") + ".</p>"
-    + '<p class="mute">' + half + (o.y ? "Found from Y " + o.y0 + " to " + (o.y0 + o.y.length - 1) + "." : "") + "</p>"
-    + "<h3>Blocks per Y level</h3>" + profile(o)
-    + (o.grid ? "<h3>Per chunk, west to east and north to south</h3><canvas id='heat'></canvas>" : "");
+    + '<p class="mute">' + half + (o.y ? "Found from Y " + o.y0 + " to " + (o.y0 + o.y.length - 1) + "." : "") + "</p></div>"
+    + "<div><h3>Blocks per Y level</h3>" + profile(o) + "</div>"
+    + (o.grid ? "<div><h3>Per chunk, west to east and north to south</h3><canvas id='heat'></canvas></div>" : "");
   if (o.grid) heat(o, $("heat"));
 }
 $("q").oninput = renderRows; $("allBlocks").onchange = renderRows;
-matchMedia("(prefers-color-scheme: dark)").onchange = () => { renderRows(); renderDetail(); };
+matchMedia("(prefers-color-scheme: dark)").onchange = renderRows;
 renderMods(); renderHead();
 // A link to one ore: census.html#create:zinc_ore (or just #zinc_ore).
 const want = decodeURIComponent(location.hash.slice(1)).toLowerCase();
 if (want) selected = DATA.ores.find(o => o.id.toLowerCase() === want || o.id.toLowerCase().endsWith(":" + want)) || null;
-renderRows(); renderDetail();
+renderRows();
 </script>
 </body>
 </html>
