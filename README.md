@@ -220,70 +220,92 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
 ## Counting what generated
 
 `/oreveintweaker census [radius]` (operators, permission level 2) tells you how much ore the world
-actually holds around you, to check a config or compare two of them:
+actually holds around you, to check a config or compare two of them. A modded pack has dozens of
+ores, so the chat only gives a **summary**, and everything else is one click or one command away:
 
 ```
-> /oreveintweaker census 7
-Census minecraft:overworld: 225 of 225 chunks loaded within 112 blocks
-  ████░░░░░░  35.4%  coal_ore  35,147  (156.2/chunk)
-  ███░░░░░░░  26.2%  copper_ore  26,009  (115.6/chunk)
-  ██░░░░░░░░  16.2%  iron_ore  16,019  (71.2/chunk)
-  █░░░░░░░░░   7.9%  redstone_ore  7,835  (34.8/chunk)
-  █░░░░░░░░░   5.8%  gold_ore  5,763  (25.6/chunk)
-  █░░░░░░░░░   5.2%  lapis_ore  5,205  (23.1/chunk)
-  ░░░░░░░░░░   3.2%  diamond_ore  3,195  (14.2/chunk)
-                     raw_copper_block  112  (0.5/chunk)
-  total ore: 99,180 (440.8/chunk)
-
-> /oreveintweaker census y 6
-  Y 48..63: 10525 ore - coal_ore 55% copper_ore 37% iron_ore 5% lapis_ore 3%
-  Y 16..31: 11883 ore - copper_ore 39% iron_ore 30% coal_ore 26% lapis_ore 4%
-  Y -32..-17: 4241 ore - iron_ore 26% gold_ore 24% diamond_ore 21% redstone_ore 16%
-  Y -64..-49: 5361 ore - redstone_ore 49% diamond_ore 24% gold_ore 13% iron_ore 8%
+> /oreveintweaker census 4
+Census overworld: 81/81 chunks, 41 ores, 56,373 (696/chunk)
+  ████████ 28.1% copper_ore  15,822
+  █████░░░ 19.1% coal_ore  10,788
+  █████░░░ 18.9% iron_ore  10,667
+  █░░░░░░░  5.0% lapis_ore  2,801
+  █░░░░░░░  4.7% redstone_ore  2,659
+  [all 41 ores] [mods] [heights] [export]
 ```
 
-(A vanilla-config world, 225 chunks around one point, each ore in its own colour in game; the first
-output is cut to the main lines, and the `y` output, from an earlier run, to four of its bands.)
+(A test world where 34 extra blocks are tagged as ores, to stand in for a pack. In game each ore's bar
+has its own colour, the name is white and the figures grey, and the bracketed words are buttons.) The
+bar is drawn against the most common ore; the figure beside it is the real share of all ores. With
+several mods, a line `mods: minecraft 64%, create 13%, ...` sits above the buttons.
+
+| Command | What it shows |
+|---|---|
+| `census [radius]` | the summary above: the five most common ores, the mods, buttons |
+| `census list [page] [radius]` | every ore, 8 per page, then the other counted blocks (raw, storage) |
+| `census mod [radius]` | the share of each mod's ores |
+| `census y [radius]` | by slabs of 64 blocks of height, each with its three main ores |
+| `census ore [radius] <name>` | one ore: its count, a profile by height, where half of it lies |
+| `census [radius] export` | a web page and CSV files, below |
+| `census save <name>` / `census diff <name>` | compare two configs, below |
+
+Clicking an ore's name in the chat runs `census ore` for it. `<name>` is the id with or without the
+mod (`zinc_ore`, `create:zinc_ore`) or part of it (`zinc`); if several match, they are listed to click.
+
+```
+> /oreveintweaker census y 4
+  Y 64 to 127: 5,867  coal 77%, copper 20%, iron 3.1%
+  Y 0 to 63: 29,383  copper 47%, coal 21%, iron 16%
+  Y -64 to -1: 21,123  iron 27%, redstone 11%, gold 7.8%
+
+> /oreveintweaker census ore 4 copper_ore
+  copper_ore: 15,822 blocks, 195/chunk, 28% of ores
+  Y -64 ···▂▃█▇█▃▂··· 319  (a mark = 16 blocks)
+  Half of it between Y 16 and 47
+```
 
 - The **radius** is in chunks (default 8 = 128 blocks, up to 32), around your position, in your
   current dimension.
-- `census y [radius]` gives the same by 16-block height band, with each band's top ores: the quick
-  way to see *where* an ore is.
-- It counts the blocks in the world, not what a generator placed: ores of every mod are included,
-  deepslate variants are merged with the stone ones, and it cannot tell a vein's ore from a normal
-  one.
+- It counts the blocks in the world, not what a generator placed: ores of every mod are included (it
+  finds them by the `forge:ores` tag), deepslate variants are merged with the stone ones, and it cannot
+  tell a vein's ore from a normal one.
 - It only reads **loaded** chunks and never generates any: the first line says how many it covered.
   Fly around, or stand in the middle of a pregenerated area, for a bigger sample.
 - `[census] blocks` in the config adds any other block to the count, for example
   `["minecraft:andesite", "minecraft:tuff"]` to see how much of your stone is that.
 - Percentages are shares of the ores only (extra blocks and raw blocks show counts).
 
-**Export.** `/oreveintweaker census [radius] export` prints the same report and also writes two CSV
-files to `config/oreveintweaker/census/` (on the server, for a dedicated one):
+**Export.** `/oreveintweaker census [radius] export` prints the summary and writes to
+`config/oreveintweaker/census/` (on the server, for a dedicated one):
 
-- `...-by-height.csv`: one row per block height Y, one column per block, **exact to the block** (the
-  chat report goes by 16-block bands). Ready for a chart.
+- `census-...html`: **the whole picture in one page**, which opens in any browser and needs nothing
+  else. A table of every ore (sortable, searchable, filtered by mod) with its count, per-chunk figure,
+  share, peak height and a height profile in each row; click a row for the exact count at each Y and a
+  map of the chunks. A link ends with `#zinc_ore` to open on one ore. This is the tool for a pack with
+  dozens of ores.
+- `...-by-height.csv`: one row per block height Y, one column per block, **exact to the block**. Ready
+  for a chart.
 - `...-by-chunk.csv`: `chunk_x,chunk_z,block,count`, one row per block per chunk: the generation works
   chunk by chunk, so this is the table for spreading, averages and outliers in a spreadsheet.
-
 - `...-info.txt`: what the files are about (dimension, seed, centre chunk, radius, chunks counted, date),
   so they still make sense weeks later.
 
-A line `[Click to copy the by-height table]` in the chat also puts the by-height table in the clipboard
-of whoever clicks it, which works on a dedicated server too.
+The chat gives buttons to copy the page's path and the by-height table to the clipboard of whoever
+clicks them, which works on a dedicated server too.
 
 **Comparing two configs.** `/oreveintweaker census save <name> [radius]` keeps the current per-chunk
 counts under a name (in `config/oreveintweaker/census/`); after changing the config and exploring
-new chunks, `/oreveintweaker census diff <name> [radius]` compares what is around you now with it, ore
-by ore, biggest change first:
+new chunks, `/oreveintweaker census diff <name> [radius]` compares what is around you now with it.
+Only what changed is listed, the biggest change first (at most 7 lines; the rest is counted in a
+line, as is what did not move):
 
 ```
 > /oreveintweaker census diff vanilla 7
 Compared with "vanilla" (225 chunks then), per chunk:
-  coal_ore: 158.0 -> 108.4  (-31%)
-  copper_ore: 115.9 -> 90.9  (-22%)
-  iron_ore: 71.1 -> 78.1  (+10%)
-  amethyst_block: 9.0 -> 14.7  (+64%)
+  coal_ore  158.0 -> 108.4  -31%
+  copper_ore  115.9 -> 90.9  -22%
+  iron_ore  71.1 -> 78.1  +10%
+  amethyst_block  9.0 -> 14.7  +64%
 ```
 
 It compares per chunk, so the two areas need not be the same size, but they should be far apart
