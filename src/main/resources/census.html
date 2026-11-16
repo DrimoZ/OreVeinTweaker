@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ore census</title>
+<style>
+/* Colours by role. Three greys (ink, mute, line), opaque surfaces, no border where space does the job.
+   Text is 4.5:1 or more on its surface; the ore colours are only on marks, and are pushed to 3:1 in the script. */
+:root{--bg:#f4f4f1;--surface:#fff;--ink:#1c1c19;--mute:#5f5f59;--line:#dcdcd5;--hover:#eeeee9;--select:#e3efe6;--accent:#1f6b3a}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--surface:#1f1f1c;--ink:#ecece5;--mute:#a3a39a;--line:#383833;--hover:#292925;--select:#243528;--accent:#7fd99a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/24px system-ui,Segoe UI,sans-serif}
+main{max-width:1200px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:20px;line-height:28px;margin:0}
+h2{font-size:15px;line-height:24px;margin:0}
+.mute{color:var(--mute);font-size:13px;line-height:20px}
+header{margin-bottom:24px}
+header p{margin:4px 0 0}
+.mods{margin:16px 0 8px;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+.mods button{all:unset;cursor:pointer;color:var(--mute);font-size:13px;padding:4px 0;border-bottom:2px solid transparent}
+.mods button:hover{color:var(--ink)}
+.mods button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tools{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.tools input[type=search]{flex:1 1 240px;max-width:360px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.tools label{color:var(--mute);font-size:13px;display:flex;gap:8px;align-items:center}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:1fr}aside{position:static!important}}
+.tablewrap{background:var(--surface);border-radius:8px;overflow:auto;max-height:78vh}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{height:32px;padding:0 12px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{position:sticky;top:0;background:var(--surface);font-size:12px;font-weight:600;color:var(--mute);border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+th.nosort{cursor:default}
+th[aria-sort]{color:var(--ink)}
+th[aria-sort=ascending]::after{content:" \25B2";font-size:9px}th[aria-sort=descending]::after{content:" \25BC";font-size:9px}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--hover)}
+tbody tr[aria-selected=true]{background:var(--select)}
+tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.dot{display:inline-block;width:8px;height:8px;margin-right:12px;vertical-align:0}
+.who{color:var(--mute);margin-left:8px;font-size:12px}
+.mark{display:inline-block;height:8px;vertical-align:baseline;margin-right:8px}
+aside{position:sticky;top:16px;background:var(--surface);border-radius:8px;padding:24px}
+aside h3{font-size:12px;line-height:20px;font-weight:600;color:var(--mute);margin:24px 0 8px}
+aside .lead{margin:4px 0 0}
+.hint{color:var(--mute);padding:8px 0}
+svg text{fill:var(--mute);font-size:11px}
+canvas{width:100%;image-rendering:pixelated;border-radius:4px;display:block}
+footer{color:var(--mute);font-size:12px;margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Ore census</h1>
+  <p class="mute" id="sub"></p>
+  <p id="sum" style="margin:16px 0 0"></p>
+</header>
+<nav class="mods" id="mods" aria-label="Filter by mod"></nav>
+<div class="tools">
+  <input type="search" id="q" placeholder="Search an ore" aria-label="Search an ore">
+  <label><input type="checkbox" id="allBlocks"> Also raw and storage blocks</label>
+</div>
+<div class="layout">
+  <div class="tablewrap"><table>
+    <thead><tr id="head"></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <aside id="detail" aria-live="polite"><div class="hint">Select an ore to see where it generates.</div></aside>
+</div>
+<footer>Ore Vein Tweaker. These are the blocks found in the world, whatever generated them, in the chunks that were loaded.</footer>
+</main>
+<script>
+const DATA = /*DATA*/{"ores":[],"minY":0,"height":16,"loaded":0,"side":1,"radius":0,"dimension":"","seed":"","date":"","center":[0,0]};
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("en-US");
+const fmt1 = n => n.toLocaleString("en-US", {maximumFractionDigits: 1, minimumFractionDigits: 1});
+const readable = id => { const p = id.split(":").pop().replace(/_/g, " "); return p[0].toUpperCase() + p.slice(1); };
+const dark = () => matchMedia("(prefers-color-scheme: dark)").matches;
+
+// Ore colours: a hue per ore, then lightness moved until the mark reaches 3:1 on the surface (WCAG 1.4.11).
+const HUES = {coal:[210,8],iron:[25,45],copper:[22,75],gold:[48,85],redstone:[0,70],lapis:[225,65],diamond:[180,65],
+  emerald:[140,60],quartz:[40,25],amethyst:[270,50],debris:[15,40],glowstone:[45,70]};
+function lum(r, g, b) { const f = v => (v /= 255) <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); }
+function hslToRgb(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [f(0) * 255, f(8) * 255, f(4) * 255]; }
+function colorOf(id) {
+  const p = id.split(":").pop(); let h, s;
+  const k = Object.keys(HUES).find(k => p.includes(k));
+  if (k) [h, s] = HUES[k]; else { let x = 0; for (const c of id) x = (x * 31 + c.charCodeAt(0)) >>> 0; h = x % 360; s = 55; }
+  const bg = dark() ? lum(31, 31, 28) : 1, up = dark();
+  let l = up ? 62 : 38;
+  for (let i = 0; i < 40; i++) { const y = lum(...hslToRgb(h, s, l)); if ((Math.max(y, bg) + .05) / (Math.min(y, bg) + .05) >= 3.1) break; l += up ? 2 : -2; }
+  return "hsl(" + h + " " + s + "% " + l + "%)";
+}
+const minY = DATA.minY;
+for (const o of DATA.ores) {
+  o.perChunk = o.total / Math.max(1, DATA.loaded);
+  let best = 0, peak = null;
+  (o.y || []).forEach((n, i) => { if (n > best) { best = n; peak = o.y0 + i; } });
+  o.peak = peak; o.max = best;
+}
+const oreList = DATA.ores.filter(o => o.ore);
+const oreTotal = oreList.reduce((a, o) => a + o.total, 0);
+for (const o of DATA.ores) o.share = o.ore && oreTotal ? 100 * o.total / oreTotal : null;
+const mods = {};
+for (const o of oreList) { const m = mods[o.mod] = mods[o.mod] || {n: 0, total: 0}; m.n++; m.total += o.total; }
+
+$("sub").textContent = DATA.dimension + ", seed " + DATA.seed + ", " + DATA.loaded + " chunks around chunk "
+  + DATA.center[0] + " " + DATA.center[1] + " (radius " + DATA.radius + "), " + DATA.date;
+$("sum").innerHTML = "<b>" + fmt(oreList.length) + "</b> ore types, <b>" + fmt(oreTotal) + "</b> blocks, <b>"
+  + fmt(Math.round(oreTotal / Math.max(1, DATA.loaded))) + "</b> per chunk, from <b>" + Object.keys(mods).length + "</b> "
+  + (Object.keys(mods).length === 1 ? "mod." : "mods.");
+
+let modFilter = null, sortKey = "total", sortDir = -1, selected = null;
+function renderMods() {
+  $("mods").innerHTML = "";
+  const add = (label, value) => { const b = document.createElement("button");
+    b.textContent = label; b.setAttribute("aria-pressed", modFilter === value);
+    b.onclick = () => { modFilter = value; renderMods(); renderRows(); }; $("mods").appendChild(b); };
+  if (Object.keys(mods).length < 2) return;
+  add("All mods", null);
+  for (const [m, v] of Object.entries(mods).sort((a, b) => b[1].total - a[1].total))
+    add(m + " " + (100 * v.total / oreTotal).toFixed(v.total / oreTotal < .1 ? 1 : 0) + "%", m);
+}
+const COLS = [
+  ["id", "Ore", o => readable(o.id)], ["total", "Blocks", o => o.total], ["perChunk", "Per chunk", o => o.perChunk],
+  ["share", "Share of ores", o => o.share == null ? -1 : o.share], ["peak", "Peak Y", o => o.peak == null ? -9999 : o.peak],
+  ["profile", "By height", null]];
+function renderHead() {
+  $("head").innerHTML = "";
+  for (const [k, label, f] of COLS) {
+    const th = document.createElement("th"); th.textContent = label;
+    if (f) { if (sortKey === k) th.setAttribute("aria-sort", sortDir < 0 ? "descending" : "ascending");
+      th.onclick = () => { sortDir = sortKey === k ? -sortDir : (k === "id" ? 1 : -1); sortKey = k; renderHead(); renderRows(); }; }
+    else th.className = "nosort";
+    $("head").appendChild(th);
+  }
+}
+// One 16-block band per bar over the whole world height, so every row reads on the same scale.
+function spark(o) {
+  const bands = Math.ceil(DATA.height / 16), v = new Array(bands).fill(0);
+  (o.y || []).forEach((n, i) => { v[Math.floor((o.y0 + i - minY) / 16)] += n; });
+  const m = Math.max(...v, 1), w = 4, h = 20;
+  let s = '<svg width="' + bands * w + '" height="' + h + '" style="vertical-align:middle" aria-hidden="true">';
+  v.forEach((n, i) => { const bh = n ? Math.max(2, Math.round(h * n / m)) : 0;
+    s += '<rect x="' + i * w + '" y="' + (h - bh) + '" width="' + (w - 1) + '" height="' + bh + '" fill="' + o.color + '"/>'; });
+  return s + "</svg>";
+}
+function visible() {
+  const q = $("q").value.trim().toLowerCase(), all = $("allBlocks").checked, col = COLS.find(c => c[0] === sortKey)[2];
+  return DATA.ores.filter(o => (all || o.ore) && (!modFilter || o.mod === modFilter) && (!q || o.id.toLowerCase().includes(q) || readable(o.id).toLowerCase().includes(q)))
+    .sort((a, b) => { const x = col(a), y = col(b); return (x < y ? -1 : x > y ? 1 : 0) * sortDir; });
+}
+function renderRows() {
+  for (const o of DATA.ores) o.color = colorOf(o.id);
+  const rows = visible(), maxShare = Math.max(...rows.map(o => o.share || 0), 1);
+  $("rows").innerHTML = rows.length ? "" : '<tr><td colspan="6" class="hint">Nothing matches.</td></tr>';
+  rows.forEach((o, i) => {
+    const tr = document.createElement("tr"); tr.tabIndex = 0; tr.title = o.id;
+    tr.setAttribute("aria-selected", o === selected);
+    tr.innerHTML = '<td><span class="dot" style="background:' + o.color + '"></span>' + readable(o.id)
+      + (o.mod !== "minecraft" ? '<span class="who">' + o.mod + "</span>" : "") + (o.ore ? "" : '<span class="who">block</span>') + "</td>"
+      + "<td>" + fmt(o.total) + "</td><td>" + fmt1(o.perChunk) + "</td><td>"
+      + (o.share == null ? '<span class="mute">-</span>' : '<span class="mark" style="width:' + Math.max(2, 64 * o.share / maxShare) + 'px;background:' + o.color + '"></span>' + o.share.toFixed(1) + "%")
+      + "</td><td>" + (o.peak == null ? "-" : o.peak) + "</td><td>" + spark(o) + "</td>";
+    const pick = () => { selected = o; history.replaceState(null, "", "#" + o.id); renderRows(); renderDetail(); const r = $("rows").children[i]; if (r) r.focus({preventScroll: true}); };
+    tr.onclick = pick;
+    tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+      else if (e.key === "ArrowDown" && tr.nextSibling) { e.preventDefault(); tr.nextSibling.focus(); }
+      else if (e.key === "ArrowUp" && tr.previousSibling) { e.preventDefault(); tr.previousSibling.focus(); } };
+    $("rows").appendChild(tr);
+  });
+}
+function profile(o) {
+  const W = 300, H = 440, top = minY + DATA.height, max = Math.max(o.max, 1), pad = 36;
+  let s = '<svg viewBox="0 0 ' + (W + pad) + " " + (H + 16) + '" width="100%" role="img" aria-label="Blocks per Y level">';
+  for (let y = Math.ceil(minY / 64) * 64; y <= top; y += 64) {
+    const py = 8 + H * (top - y) / DATA.height;
+    s += '<line x1="' + pad + '" x2="' + (W + pad) + '" y1="' + py + '" y2="' + py + '" stroke="var(--line)"/>'
+      + '<text x="' + (pad - 6) + '" y="' + (py + 4) + '" text-anchor="end">' + y + "</text>";
+  }
+  (o.y || []).forEach((n, i) => { if (!n) return;
+    const y = o.y0 + i, py = 8 + H * (top - y - 1) / DATA.height, bh = Math.max(H / DATA.height, .6);
+    s += '<rect x="' + pad + '" y="' + py + '" width="' + (W * n / max) + '" height="' + bh + '" fill="' + o.color + '"><title>Y ' + y + ": " + fmt(n) + "</title></rect>"; });
+  return s + "</svg>";
+}
+function heat(o, canvas) {
+  const n = DATA.side; canvas.width = n; canvas.height = n;
+  const g = canvas.getContext("2d"), img = g.createImageData(n, n), m = Math.max(...o.grid, 1);
+  const t = document.createElement("canvas").getContext("2d"); t.fillStyle = o.color; t.fillRect(0, 0, 1, 1);
+  const c = t.getImageData(0, 0, 1, 1).data, base = dark() ? 41 : 238;
+  for (let cx = 0; cx < n; cx++) for (let cz = 0; cz < n; cz++) {
+    const v = o.grid[cx * n + cz] / m, p = (cz * n + cx) * 4;
+    for (let k = 0; k < 3; k++) img.data[p + k] = base + (c[k] - base) * v;
+    img.data[p + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+}
+function renderDetail() {
+  const o = selected; if (!o) return;
+  let half = "";
+  if (o.y && o.total) { let c = 0, lo = null, hi = null;
+    o.y.forEach((n, i) => { c += n; if (lo === null && c >= o.total / 4) lo = o.y0 + i; if (hi === null && c >= o.total * 3 / 4) hi = o.y0 + i; });
+    half = "Half of it lies between Y " + lo + " and " + hi + ". "; }
+  $("detail").innerHTML = "<h2>" + readable(o.id) + ' <span class="mute">' + o.id + "</span></h2>"
+    + '<p class="lead">' + fmt(o.total) + " blocks, " + fmt1(o.perChunk) + " per chunk" + (o.share != null ? ", " + o.share.toFixed(1) + "% of ores" : "") + ".</p>"
+    + '<p class="mute">' + half + (o.y ? "Found from Y " + o.y0 + " to " + (o.y0 + o.y.length - 1) + "." : "") + "</p>"
+    + "<h3>Blocks per Y level</h3>" + profile(o)
+    + (o.grid ? "<h3>Per chunk, west to east and north to south</h3><canvas id='heat'></canvas>" : "");
+  if (o.grid) heat(o, $("heat"));
+}
+$("q").oninput = renderRows; $("allBlocks").onchange = renderRows;
+matchMedia("(prefers-color-scheme: dark)").onchange = () => { renderRows(); renderDetail(); };
+renderMods(); renderHead();
+// A link to one ore: census.html#create:zinc_ore (or just #zinc_ore).
+const want = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+if (want) selected = DATA.ores.find(o => o.id.toLowerCase() === want || o.id.toLowerCase().endsWith(":" + want)) || null;
+renderRows(); renderDetail();
+</script>
+</body>
+</html>
