@@ -50,6 +50,11 @@ Server-side only: no registries, no packets, `displayTest = "IGNORE_ALL_VERSION"
 
 **Player commands** (all permission level 2, none needed to play): `/oreveintweaker reload`
 (`VeinCommand`), `strip` (`Strip`) and `census` (`Census`):
+- `Strip` works a few chunk columns per tick (`Job`, advanced by the server tick, one at a time), so the
+  server never freezes. Per block: `remove` list > `keep` list > built-in rules (ores, storage, bedrock) >
+  removed. `keep`/`remove` hold ids or `#tags` and the sub-commands write them back to the config; `only`
+  runs with just the given blocks. Blocks are chosen with `target`/`hand`/`hotbar`/`inventory`/id/tag
+  (`Strip.select`). Sections are skipped through their palette (`maybeHas`).
 - `Census` counts blocks in the loaded chunks around the player, in the dimension they are in, by reading
   the sections' palettes (cost per distinct block, not per block). Ores are the `forge:ores` / `c:ores`
   tag, so other mods' ores need no config. It never loads a chunk.

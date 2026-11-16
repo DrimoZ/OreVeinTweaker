@@ -65,6 +65,7 @@ final class Strip {
     /** What one tick may spend; at least one chunk column runs each tick, however slow. */
     private static final long TICK_BUDGET_NS = 25_000_000L;
     private static final int BAR = 20;
+    private static final int GRACE_TICKS = 100;
     private static final String CMD = "/oreveintweaker strip ";
     private static final String[] WORDS = {"target", "hand", "hotbar", "inventory"};
 
@@ -178,9 +179,8 @@ final class Strip {
                                 StringArgumentType.getString(ctx, "blocks"), false))))
                 .then(Commands.literal("list").executes(ctx -> show(ctx.getSource(), name, list)))
                 .then(Commands.literal("clear").executes(ctx -> {
-                    int n = list.get().size();
-                    list.set(new ArrayList<>());
-                    list.save();
+                    int n = read(list).size();
+                    write(list, new ArrayList<>());
                     ctx.getSource().sendSuccess(() -> Component.literal("Emptied the " + name + " list (" + n + " entries)"), false);
                     return n;
                 }));
@@ -282,20 +282,55 @@ final class Strip {
 
     // ---------------------------------------------------------------- the lists
 
+    /**
+     * Forge's file watcher reloads the config right after our own save(), and once it read the file
+     * mid-write, called it "not correct" and put the list back to empty (the list showed 0 just after an add).
+     * So the last list written is kept here for a few seconds: read from, and written again if the config lost it.
+     */
+    private static final class Written {
+        final List<String> list;
+        int left = GRACE_TICKS;
+        Written(List<String> list) { this.list = list; }
+    }
+
+    private static final java.util.Map<ForgeConfigSpec.ConfigValue<List<? extends String>>, Written> written = new java.util.HashMap<>();
+    private static int clock;
+
+    private static List<String> read(ForgeConfigSpec.ConfigValue<List<? extends String>> cfg) {
+        Written w = written.get(cfg);
+        return new ArrayList<>(w != null ? w.list : cfg.get());
+    }
+
+    private static void write(ForgeConfigSpec.ConfigValue<List<? extends String>> cfg, List<String> list) {
+        written.put(cfg, new Written(list));
+        cfg.set(list);
+        cfg.save();
+    }
+
+    /** Once a second: put back what the watcher dropped, and forget a list once it has been safe for the grace period. */
+    private static void recheck() {
+        written.entrySet().removeIf(e -> {
+            if (!e.getKey().get().equals(e.getValue().list)) {
+                e.getKey().set(e.getValue().list);
+                e.getKey().save();
+            }
+            return (e.getValue().left -= 20) <= 0;
+        });
+    }
+
     private static int edit(CommandSourceStack src, String name, ForgeConfigSpec.ConfigValue<List<? extends String>> list,
                             ForgeConfigSpec.ConfigValue<List<? extends String>> other, String blocks, boolean add)
             throws CommandSyntaxException {
-        List<String> current = new ArrayList<>(list.get());
+        List<String> current = read(list);
         List<String> changed = new ArrayList<>(), same = new ArrayList<>(), shadowed = new ArrayList<>();
         for (String e : select(src, blocks)) {
             boolean did = add ? !current.contains(e) && current.add(e) : current.remove(e);
             (did ? changed : same).add(e);
             // `remove` wins over `keep`: say so instead of letting a kept block vanish unexplained.
-            if (did && add && name.equals("keep") && other.get().contains(e)) shadowed.add(e);
+            if (did && add && name.equals("keep") && read(other).contains(e)) shadowed.add(e);
         }
         if (!changed.isEmpty()) {
-            list.set(current);
-            list.save();
+            write(list, current);
         }
         MutableComponent msg = Component.literal((add ? "Added to " : "Removed from ") + name + ": ")
                 .append(Component.literal(changed.isEmpty() ? "nothing" : names(changed)).withStyle(ChatFormatting.WHITE));
@@ -313,7 +348,7 @@ final class Strip {
     }
 
     private static int show(CommandSourceStack src, String name, ForgeConfigSpec.ConfigValue<List<? extends String>> list) {
-        List<? extends String> entries = list.get();
+        List<String> entries = read(list);
         String title = Character.toUpperCase(name.charAt(0)) + name.substring(1) + " (" + entries.size() + ")";
         src.sendSuccess(() -> Component.literal(title).withStyle(ChatFormatting.WHITE).append(
                 Component.literal(" ").append(Census.button("+ target", CMD + name + " add target", "Add the block you look at", false))
@@ -359,8 +394,8 @@ final class Strip {
         if (only != null) {
             toRemove = only::has;
         } else {
-            BlockSet keep = parse(VeinConfig.STRIP_KEEP.get(), unknown);
-            BlockSet remove = parse(VeinConfig.STRIP_REMOVE.get(), unknown);
+            BlockSet keep = parse(read(VeinConfig.STRIP_KEEP), unknown);
+            BlockSet remove = parse(read(VeinConfig.STRIP_REMOVE), unknown);
             boolean ores = VeinConfig.STRIP_KEEP_ORES.get(), storage = VeinConfig.STRIP_KEEP_STORAGE.get(),
                     bedrock = VeinConfig.STRIP_KEEP_BEDROCK.get();
             toRemove = s -> remove.has(s) || !(keep.has(s) || ores && s.is(Tags.Blocks.ORES)
@@ -385,7 +420,9 @@ final class Strip {
     }
 
     static void onTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || job == null) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!written.isEmpty() && ++clock % 20 == 0) recheck();
+        if (job == null) return;
         Job j = job;
         long deadline = System.nanoTime() + TICK_BUDGET_NS;
         do {
@@ -403,6 +440,7 @@ final class Strip {
 
     static void onStop(ServerStoppingEvent event) {
         job = null; // its level is going away; a world opened next must not inherit it
+        written.clear();
     }
 
     // ponytail: getChunk generates a chunk that was never visited, on this thread - the budget cannot cut that short.

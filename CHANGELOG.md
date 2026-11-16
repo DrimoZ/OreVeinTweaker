@@ -30,9 +30,14 @@
   and `raw_block_amount = 5`) could not be reproduced. Counts over one small area vary enormously
   (copper veins from 1 to 53,818 blocks over six areas), so the table compares settings on the same
   terrain; a new vein at `size = 1` has about four fifths of copper's volume and the same as iron's.
-- **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
+- **New command `/oreveintweaker strip [radius] [min_y max_y]`** (permission level 2): clears everything
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
-  to 16 chunks. No undo.
+  to 16 chunks, height up to Y 64 by default. No undo. It runs a few chunks per tick (no server freeze),
+  with a progress bar on the action bar and `strip cancel`. The `[strip]` config section sets the radius,
+  the height and the built-in rules, and holds a `keep` and a `remove` list (block ids or `#tags`; `remove`
+  wins, so even ores can go). `strip keep|remove add|del|list|clear` edit them, and `strip only <blocks>`
+  removes just those blocks once. Blocks can be given as `target` (the one you look at), `hand`, `hotbar`,
+  `inventory`, an id or a tag.
 
 ## 1.1.0
 
