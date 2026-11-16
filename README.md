@@ -267,7 +267,7 @@ from its config files alone.
 |---|---|
 | `/oreveintweaker reload` | re-reads the config and the [vein files](#as-many-veins-as-you-want), lists the veins that are on and any file it skipped, with the reason |
 | `/oreveintweaker census ...` | counts the ores around you: [a short summary, one ore, a web page](#counting-what-generated) |
-| `/oreveintweaker strip [radius]` | clears everything but the ores around you, [to see the veins](#seeing-only-the-ores) |
+| `/oreveintweaker strip ...` | clears everything but the ores around you, or just the blocks you name, [to see the veins](#seeing-only-the-ores) |
 
 ## Counting what generated
 
@@ -369,13 +369,34 @@ easily differs by 10-30% on its own (the example above is two spots 640 blocks a
 
 ### Seeing only the ores
 
-`/oreveintweaker strip [radius]` (operators) clears everything below Y 64 around you except ores, raw
+`/oreveintweaker strip [radius] [min_y max_y]` (operators) clears everything around you except ores, raw
 and storage blocks, and bedrock: the veins are left floating, easy to see and to screenshot. It is
 meant for a throwaway test world:
 
-- **It cannot be undone**, and it takes anything built below Y 64 with it.
-- The radius is in chunks, 0 to 16 (default 2). It sets blocks one by one, so the server freezes
-  while it works: a few seconds for a small radius, minutes for 16.
+- **It cannot be undone**, and it takes anything built in the range with it.
+- The radius is in chunks, 0 to 16 (default 2). The height range defaults to the bottom of the world up
+  to Y 64; both are set in `[strip]` and can be given for one run.
+- It works a few chunks per tick, so the server keeps running: a progress bar (percentage, blocks removed,
+  time left) is on the action bar, and `/oreveintweaker strip cancel` stops it.
+
+**What goes and what stays.** Two lists in the `[strip]` section of the config, which the commands edit
+for you. A block in `remove` always goes, even an ore; one in `keep` always stays; then the built-in rules
+(`keep_ores`, `keep_storage_blocks`, `keep_bedrock`); everything else goes. Entries are block ids from any
+mod, or `#tags` (`#forge:ores/gold`).
+
+| Command | What it does |
+|---|---|
+| `strip only [radius [min_y max_y]] <blocks>` | removes **only** those blocks, once, ores included; the rest is left alone. This is how you clear the limestone once you are done with it: `strip only 8 limestone` |
+| `strip keep add [<blocks>]`, `strip keep del [<blocks>]` | edits the `keep` list |
+| `strip remove add [<blocks>]`, `strip remove del [<blocks>]` | edits the `remove` list |
+| `strip keep list`, `strip remove list`, `strip list` | shows the lists (click an `[x]` to take an entry off) and the other settings |
+| `strip keep clear`, `strip remove clear` | empties a list |
+| `strip cancel` | stops the run |
+
+`<blocks>` is one of: `target` (the block you look at, the default when left out), `hand` (both hands),
+`hotbar`, `inventory`, a block id (the mod name may be left out if only one block has that name) or a
+`#tag`. The id and tag suggestions come from the game. Only blocks count: a pickaxe in your hotbar is
+ignored.
 
 ## How precise is it?
 

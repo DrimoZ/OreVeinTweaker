@@ -21,6 +21,8 @@ public class OreVeinTweaker {
         NeoForge.EVENT_BUS.addListener(Census::register);
         NeoForge.EVENT_BUS.addListener(VeinCommand::register);
         NeoForge.EVENT_BUS.addListener(Strip::register);
+        NeoForge.EVENT_BUS.addListener(Strip::onTick);
+        NeoForge.EVENT_BUS.addListener(Strip::onStop);
         if (DevTools.ENABLED) {
             NeoForge.EVENT_BUS.addListener(DevTools::register);
             NeoForge.EVENT_BUS.addListener(DevTools::measureToggle);

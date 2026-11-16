@@ -8,6 +8,7 @@ import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.ChatFormatting;
+import net.minecraft.util.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -70,6 +71,8 @@ public final class Census {
                 .then(Commands.literal("census")
                         .executes(ctx -> summary(ctx.getSource(), DEFAULT_RADIUS, false))
                         .then(Commands.literal("export").executes(ctx -> summary(ctx.getSource(), DEFAULT_RADIUS, true)))
+                        .then(Commands.literal("open").then(Commands.argument("file", StringArgumentType.word())
+                                .executes(ctx -> open(ctx.getSource(), StringArgumentType.getString(ctx, "file")))))
                         .then(named("save", true))
                         .then(named("diff", false))
                         .then(view(Commands.literal("y"), Census::heights))
@@ -530,6 +533,7 @@ public final class Census {
         }
         String where = page.toAbsolutePath().toString();
         MutableComponent done = Component.literal("  Exported in " + s.millis() + " ms: ");
+        done.append(button("open", CMD + "open " + page.getFileName(), "Open the page in your browser")).append(Component.literal(" "));
         done.append(button("copy the page's path", where, "", true));
         // A chat line carries at most about 256 KB of text.
         if (byY.length() <= 200_000) {
@@ -537,6 +541,24 @@ public final class Census {
         }
         src.sendSuccess(() -> done, false);
         send(src, "  " + dir.toAbsolutePath());
+    }
+
+    /**
+     * The chat cannot open a file (the client drops OPEN_FILE from a server, OPEN_URL takes http only), but in single
+     * player the server is on the player's machine and can. Only a .html of the export folder, never a path.
+     */
+    private static int open(CommandSourceStack src, String name) {
+        Path page = VeinFiles.dir().resolveSibling("census").resolve(name);
+        if (!name.endsWith(".html") || !Files.isRegularFile(page)) {
+            send(src, "No such page in config/oreveintweaker/census.");
+            return 0;
+        }
+        if (src.getServer().isDedicatedServer()) {
+            send(src, "This server is not your computer: open " + page.toAbsolutePath() + " there.");
+            return 0;
+        }
+        Util.getPlatform().openFile(page.toFile());
+        return 1;
     }
 
     /** The page's data: one entry per counted block, its count at each Y (trimmed to where it exists) and in each chunk. */
