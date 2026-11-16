@@ -24,6 +24,10 @@
   block at every Y, exact, and of every block in every chunk) and an info file (seed, centre, radius,
   date). `census save <name>` keeps the counts and `census diff <name>` lists only what changed since,
   biggest change first. Bars keep to colours readable on the chat background.
+- **Precision section re-measured** (README): the table now gives the vein volume the mod logs and the
+  blocks actually placed, side by side, over the same 576 chunks. Nothing changed in generation: the
+  figures are identical on the code from before the higher limits. Two of the old figures (`ore_amount = 2`
+  and `raw_block_amount = 5`) could not be reproduced; a new vein holds about a fifth of copper's blocks.
 - **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
   to 16 chunks. No undo.

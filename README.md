@@ -12,6 +12,8 @@ This page is the full guide. The short version is the
 - [New veins](#new-veins)
 - [Recipes](#recipes)
 - [Complete examples](#complete-examples)
+- [Commands](#commands)
+- [Counting what generated](#counting-what-generated)
 - [How precise is it?](#how-precise-is-it)
 - [Compatibility](#compatibility)
 - [Versions and building](#versions-and-building)
@@ -62,7 +64,8 @@ every option above, plus `min_y` and `max_y`:
 - A vein is at most **110 blocks tall** (`max_y - min_y`): vanilla's vein noises only exist over
   that height. Veins thin out over the 20 blocks at each end, like vanilla ones.
 - They are built by vanilla's own vein algorithm, with their own ribbons: they do not follow the
-  copper or iron veins. `size = 1` gives about as much vein as vanilla copper.
+  copper or iron veins. `size = 1` gives the same vein volume as vanilla copper, which comes out as
+  thinner veins in blocks (see [How precise is it?](#how-precise-is-it)).
 - Where a new vein crosses a vanilla one, the vanilla vein wins.
 - They generate wherever large veins do - the Overworld, unless a datapack says otherwise.
 
@@ -217,6 +220,17 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
     filler = "minecraft:dripstone_block"
 ```
 
+## Commands
+
+All of them are for operators (permission level 2), and none of them is needed to play: the mod works
+from its config files alone.
+
+| Command | What it does |
+|---|---|
+| `/oreveintweaker reload` | re-reads the config and the [vein files](#as-many-veins-as-you-want), lists the veins that are on and any file it skipped, with the reason |
+| `/oreveintweaker census ...` | counts the ores around you: [a short summary, one ore, a web page](#counting-what-generated) |
+| `/oreveintweaker strip [radius]` | clears everything but the ores around you, [to see the veins](#seeing-only-the-ores) |
+
 ## Counting what generated
 
 `/oreveintweaker census [radius]` (operators, permission level 2) tells you how much ore the world
@@ -327,18 +341,28 @@ meant for a throwaway test world:
 
 ## How precise is it?
 
-The multipliers were calibrated against measurements of vanilla generation, then checked in game:
+The multipliers were calibrated against measurements of vanilla generation, then checked in game, in
+two ways:
 
-| Setting | Measured |
-|---|---|
-| `size = 2` / `0.5` | x2.00 / x0.49 the vein volume |
-| `size = 3` / `4.5` | x2.97 / x4.49 (blocks placed over 576 fresh chunks, one world) |
-| `ore_amount = 2` | x2.1 the ore |
-| `raw_block_amount = 5` | x5.2 the raw blocks |
-| new vein, `size = 1` | x1.00 vanilla copper's volume |
+- the **volume** of the vein region, which `size` is calibrated on: the mod logs it at every world
+  load (`vein volume vs vanilla with the current config: copper x1.95`);
+- the **blocks placed**, counted with the development build's `/veins` over 576 fresh chunks (24 x 24)
+  of one world, the same terrain for every row (copper and iron veins together).
 
-Bigger veins are also slightly richer at their core, as vanilla ones are: that is how the generator
-works.
+| Setting | Volume (log) | Blocks placed |
+|---|---|---|
+| `size = 0.5` | x0.51 | x0.46 |
+| `size = 2` | x1.95 | x2.00 |
+| `size = 3` | x2.92 | x2.97 |
+| `size = 4.5` | x4.33 | x4.49 |
+| `ore_amount = 2` | | x1.86 the ore |
+| `raw_block_amount = 5` | | x4.55 the raw blocks |
+| new vein, `size = 1` | x1.00 vanilla copper | about x0.2 vanilla copper's blocks |
+
+Read the rows as "about": another seed moves them by a few percent (the raw blocks are rare, a few
+hundred over the whole sample). Bigger veins are also slightly richer at their core, as vanilla ones
+are: that is how the generator works. A new vein has the volume of a copper vein but, measured, about a
+fifth of its blocks.
 
 ## Compatibility
 

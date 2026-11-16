@@ -48,6 +48,20 @@ components to match (26.1.2.112).
 
 Server-side only: no registries, no packets, `displayTest = "IGNORE_ALL_VERSION"`.
 
+**Player commands** (all permission level 2, none needed to play): `/oreveintweaker reload`
+(`VeinCommand`), `strip` (`Strip`) and `census` (`Census`):
+- `Census` counts blocks in the loaded chunks around the player, in the dimension they are in, by reading
+  the sections' palettes (cost per distinct block, not per block). Ores are the `forge:ores` / `c:ores`
+  tag, so other mods' ores need no config. It never loads a chunk.
+- A pack has 30 to 100 ores, so the chat is a **summary** (header, five bars, mods, buttons) and every other
+  view is a sub-command or a click: `list`, `mod`, `y` (slabs of 64), `ore <name>`, `save`/`diff`. Chat
+  text is white or grey and only the bar is coloured, with colours kept to 3:1 on the chat background
+  (measured: DARK_GRAY, BLUE and the dark red/purple are under 2:1).
+- `export` writes a self-contained web page (`src/main/resources/census.html`, the data injected between
+  `/*DATA*/` and `/*END*/`) next to two CSV files. The markers, not a line end: a Windows checkout turns
+  the template's `\n` into `\r\n`, which once made the export fail on every branch.
+- The chat buttons and the section-range calls are loader-API lines: see `PORTING.md`.
+
 `VeinRules` is an immutable snapshot swapped on common setup and on every config reload: worldgen
 threads read it without locks.
 
