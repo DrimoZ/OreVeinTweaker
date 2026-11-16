@@ -20,6 +20,14 @@ public final class VeinConfig {
     public static final Vein IRON;
     public static final Extra[] EXTRA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CENSUS_BLOCKS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> STRIP_KEEP;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> STRIP_REMOVE;
+    public static final ForgeConfigSpec.BooleanValue STRIP_KEEP_ORES;
+    public static final ForgeConfigSpec.BooleanValue STRIP_KEEP_STORAGE;
+    public static final ForgeConfigSpec.BooleanValue STRIP_KEEP_BEDROCK;
+    public static final ForgeConfigSpec.IntValue STRIP_MIN_Y;
+    public static final ForgeConfigSpec.IntValue STRIP_MAX_Y;
+    public static final ForgeConfigSpec.IntValue STRIP_RADIUS;
 
     public record Vein(ForgeConfigSpec.BooleanValue enabled,
                        ForgeConfigSpec.DoubleValue size,
@@ -48,6 +56,25 @@ public final class VeinConfig {
         CENSUS_BLOCKS = b.comment("Extra blocks counted by /oreveintweaker census, next to every ore and raw/storage block.",
                         "Any block id, from any mod, e.g. [\"minecraft:andesite\", \"minecraft:tuff\"].")
                 .push("census").defineListAllowEmpty("blocks", List.of(), o -> o instanceof String);
+        b.pop();
+        b.comment("/oreveintweaker strip: clears everything but the ores around you, to look at the veins.",
+                "Lists take block ids from any mod, or a tag with a #: [\"minecraft:tuff\", \"#forge:ores/gold\"].",
+                "The commands `strip keep add` and `strip remove add` edit them for you.").push("strip");
+        STRIP_KEEP = b.comment("Blocks strip leaves in place, on top of the rules below.")
+                .defineListAllowEmpty("keep", List.of(), o -> o instanceof String);
+        STRIP_REMOVE = b.comment("Blocks strip always removes, even ores and storage blocks: this list wins over `keep`.")
+                .defineListAllowEmpty("remove", List.of(), o -> o instanceof String);
+        STRIP_KEEP_ORES = b.comment("Keep every block of the ores tag (any mod's ores).")
+                .define("keep_ores", true);
+        STRIP_KEEP_STORAGE = b.comment("Keep every storage block, which includes the raw ore blocks.")
+                .define("keep_storage_blocks", true);
+        STRIP_KEEP_BEDROCK = b.comment("Keep bedrock.").define("keep_bedrock", true);
+        STRIP_MIN_Y = b.comment("Lowest Y strip clears (the bottom of the world if lower).")
+                .defineInRange("min_y", -2032, -2032, 2031);
+        STRIP_MAX_Y = b.comment("Highest Y strip clears. `strip <radius> <min_y> <max_y>` overrides both for one run.")
+                .defineInRange("max_y", 64, -2032, 2031);
+        STRIP_RADIUS = b.comment("Radius in chunks when the command gives none.")
+                .defineInRange("default_radius", 2, 0, 16);
         b.pop();
         SPEC = b.build();
     }
