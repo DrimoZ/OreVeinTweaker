@@ -614,7 +614,7 @@ public final class Census {
         return button(label, value, hover, false);
     }
 
-    private static MutableComponent button(String label, String value, String hover, boolean copy) {
+    static MutableComponent button(String label, String value, String hover, boolean copy) {
         ClickEvent click = copy ? new ClickEvent.CopyToClipboard(value)
                 : new ClickEvent.RunCommand(value);
         return Component.literal("[" + label + "]").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA).withUnderlined(true)
