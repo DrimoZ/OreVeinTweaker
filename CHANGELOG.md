@@ -13,14 +13,17 @@
   no filler), `raw_block_amount` up to 50 (nearly every ore is a raw block). Past those values the
   formulas are already at 100%.
 - **New command `/oreveintweaker census [radius]`** (permission level 2): counts every ore, raw block and
-  storage block in the loaded chunks around you, with the average per chunk and each ore's share of the
-  ores. `census y [radius]` breaks it down by height. The radius is in chunks (default 8, max 32). It
-  counts what is in the world, so it covers other mods' ores too, and `[census] blocks` adds any other
-  block to the count. With `export`, it also writes two CSV files to `config/oreveintweaker/census/`
-  (the count of every block at every Y, exact, and of every block in every chunk) and an info file (seed,
-  centre, radius, date), and a chat line copies the by-height table to the clipboard. The report shows
-  each ore's share as a coloured bar. `census save <name>` keeps the counts and `census diff <name>`
-  compares them with what is around you now, ore by ore.
+  storage block in the loaded chunks around you. Built for packs with dozens of ores: the chat shows a
+  short summary (the five most common ores as bars, the mods, buttons), `census list` pages through
+  every ore, `census mod` gives the share of each mod, `census y` goes by slabs of 64 blocks of height
+  and `census ore <name>` shows one ore's profile by height; clicking an ore's name opens it. The radius
+  is in chunks (default 8, max 32). It counts what is in the world, so it covers other mods' ores too,
+  and `[census] blocks` adds any other block to the count. With `export`, it writes to
+  `config/oreveintweaker/census/` a self-contained **web page** (every ore, sortable and searchable,
+  filtered by mod, with its height profile and a map of the chunks), two CSV files (the count of every
+  block at every Y, exact, and of every block in every chunk) and an info file (seed, centre, radius,
+  date). `census save <name>` keeps the counts and `census diff <name>` lists only what changed since,
+  biggest change first. Bars keep to colours readable on the chat background.
 - **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
   to 16 chunks. No undo.
