@@ -359,7 +359,10 @@ two ways:
 | `raw_block_amount = 5` | | x4.55 the raw blocks |
 | new vein, `size = 1` | x1.00 vanilla copper | about x0.2 vanilla copper's blocks |
 
-Read the rows as "about": another seed moves them by a few percent (the raw blocks are rare, a few
+Measured on 1.20.1. On 26.1 the volume figures are the same, and the blocks placed come out at x1.88
+for `size = 2` and x4.26 for `size = 4.5`: its terrain has fewer veins to begin with, so the blocks
+counted differ even though the mod's calibration is identical. Read the rows as "about": another seed
+moves them by a few percent (the raw blocks are rare, a few
 hundred over the whole sample). Bigger veins are also slightly richer at their core, as vanilla ones
 are: that is how the generator works. A new vein has the volume of a copper vein but, measured, about a
 fifth of its blocks.
