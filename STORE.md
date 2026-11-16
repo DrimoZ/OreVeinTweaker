@@ -57,9 +57,10 @@ Works with terrain mods like Terralith and Tectonic.
 
 ![Options](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_options.png)
 
-The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extra_3]` for new veins
-(off by default). Need more new veins? Put one small file each in `config/oreveintweaker/veins/`
-(the first launch writes an example). Every option is explained inside the file.
+`config/oreveintweaker-common.toml` tunes the two vanilla veins, `[copper]` and `[iron]`. **Every new
+vein is its own small file** in `config/oreveintweaker/veins/` - as many as you want, the first launch
+writes an example to copy, `/oreveintweaker reload` applies them. Every option is explained inside the
+files. (Three older slots, `[extra_1]` to `[extra_3]`, still work in the main file.)
 
 | Option | Default | Effect |
 |---|---|---|
@@ -68,12 +69,13 @@ The file has a section per vein: `[copper]`, `[iron]`, and `[extra_1]` to `[extr
 | `ore_amount` | `1.0` | Ore vs filler: `2` = twice the ore |
 | `raw_block_amount` | `1.0` | Raw blocks: `5` = five times as many |
 | `ore`, `raw_block`, `filler` | vanilla | Any block, from any mod, or a weighted list |
-| `min_y`, `max_y` | per slot | New veins only: their height |
+| `min_y`, `max_y` | none | New veins only: their height (required) |
 
 ![Recipes](https://raw.githubusercontent.com/DrimoZ/OreVeinTweaker/main/docs/store-art/header_recipes.png)
 
-Four complete setups, one per kind of modpack. Put each line in the matching section of
-`config/oreveintweaker-common.toml`, in place of the same key; anything you do not paste stays as it is.
+Four complete setups, one per kind of modpack. The parts for `[copper]` and `[iron]` go in the matching
+section of `config/oreveintweaker-common.toml`, in place of the same key; anything you do not paste
+stays as it is. A new vein is a file of its own, named in the first line.
 
 **⚔️ Expert pack - rare veins, each one a jackpot**
 ```toml
@@ -89,43 +91,55 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
 
 **⚙️ Create pack - zinc gets its own veins**
 ```toml
+# config/oreveintweaker/veins/zinc.toml
 # Copper and iron stay vanilla. Zinc veins run in calcite, through the copper heights.
-[extra_1]
-    enabled = true
-    size = 0.8                          # a bit rarer than copper
-    ore = "create:zinc_ore"
-    raw_block = "create:raw_zinc_block"
-    filler = "minecraft:calcite"
-    min_y = 0
-    max_y = 70
+size = 0.8                          # a bit rarer than copper
+ore = "create:zinc_ore"
+raw_block = "create:raw_zinc_block"
+filler = "minecraft:calcite"
+min_y = 0
+max_y = 70
 ```
 
 **💰 Gold rush - the deep is gold and redstone**
 ```toml
+# config/oreveintweaker-common.toml
 # The iron veins become gold veins, a little poorer since gold is precious...
 [iron]
     ore = "minecraft:deepslate_gold_ore"
     raw_block = "minecraft:raw_gold_block"
     ore_amount = 0.6
-# ...and redstone veins in calcite join them (the slot's own defaults, Y -60 to -20).
-[extra_3]
-    enabled = true
+```
+```toml
+# config/oreveintweaker/veins/deep_redstone.toml
+# ...and redstone veins in calcite join them, deep down.
+ore = "minecraft:deepslate_redstone_ore"
+raw_block = "minecraft:redstone_block"
+filler = "minecraft:calcite"
+min_y = -60
+max_y = -20
 ```
 
 **🏛️ Builder pack - huge stone bands, no free ore**
 ```toml
-# The veins stay as wide decorative ribbons of granite, tuff and dripstone.
+# config/oreveintweaker-common.toml
+# The veins stay as wide decorative ribbons of granite and tuff...
 [copper]
     size = 2.5
     ore_amount = 0.0
 [iron]
     size = 2.5
     ore_amount = 0.0
-[extra_2]
-    enabled = true
-    size = 2.0
-    ore_amount = 0.0
-    filler = "minecraft:dripstone_block"
+```
+```toml
+# config/oreveintweaker/veins/dripstone.toml
+# ...and a third kind of ribbon, in dripstone. The ore is required but never appears: ore_amount is 0.
+size = 2.0
+ore_amount = 0.0
+ore = "minecraft:coal_ore"
+filler = "minecraft:dripstone_block"
+min_y = 0
+max_y = 60
 ```
 
 Shorter recipes, every option in detail and how precise the numbers are:
