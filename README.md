@@ -265,7 +265,9 @@ mod (`zinc_ore`, `create:zinc_ore`) or part of it (`zinc`); if several match, th
 ```
 
 - The **radius** is in chunks (default 8 = 128 blocks, up to 32), around your position, in your
-  current dimension.
+  current dimension: run it in the Nether and it counts the Nether (quartz, gold, ancient debris), in
+  the End it tells you there is no ore. A saved count remembers its dimension, and `diff` refuses to
+  compare it with another one.
 - It counts the blocks in the world, not what a generator placed: ores of every mod are included (it
   finds them by the `forge:ores` tag), deepslate variants are merged with the stone ones, and it cannot
   tell a vein's ore from a normal one.

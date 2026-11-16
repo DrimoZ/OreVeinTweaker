@@ -174,15 +174,22 @@ function renderRows() {
   });
 }
 function profile(o) {
-  const W = 300, H = 440, top = minY + DATA.height, max = Math.max(o.max, 1), pad = 36;
+  // The axis fits the ore, not the world: an ore found over 130 blocks of a 384-block world would leave
+  // two thirds of the chart empty. Whole 16s, at least 64 high, a tick every 16, 32 or 64.
+  const have = o.y ? [o.y0, o.y0 + o.y.length] : [minY, minY + DATA.height];
+  const low = Math.floor(have[0] / 16) * 16;
+  let top = Math.ceil(have[1] / 16) * 16;
+  if (top - low < 64) top = low + 64;
+  const span = top - low, step = span <= 96 ? 16 : span <= 192 ? 32 : 64;
+  const W = 300, H = Math.min(440, Math.max(180, span * 3)), max = Math.max(o.max, 1), pad = 36;
   let s = '<svg viewBox="0 0 ' + (W + pad) + " " + (H + 16) + '" width="100%" role="img" aria-label="Blocks per Y level">';
-  for (let y = Math.ceil(minY / 64) * 64; y <= top; y += 64) {
-    const py = 8 + H * (top - y) / DATA.height;
+  for (let y = Math.ceil(low / step) * step; y <= top; y += step) {
+    const py = 8 + H * (top - y) / span;
     s += '<line x1="' + pad + '" x2="' + (W + pad) + '" y1="' + py + '" y2="' + py + '" stroke="var(--line)"/>'
       + '<text x="' + (pad - 6) + '" y="' + (py + 4) + '" text-anchor="end">' + y + "</text>";
   }
   (o.y || []).forEach((n, i) => { if (!n) return;
-    const y = o.y0 + i, py = 8 + H * (top - y - 1) / DATA.height, bh = Math.max(H / DATA.height, .6);
+    const y = o.y0 + i, py = 8 + H * (top - y - 1) / span, bh = Math.max(H / span, .6);
     s += '<rect x="' + pad + '" y="' + py + '" width="' + (W * n / max) + '" height="' + bh + '" fill="' + o.color + '"><title>Y ' + y + ": " + fmt(n) + "</title></rect>"; });
   return s + "</svg>";
 }

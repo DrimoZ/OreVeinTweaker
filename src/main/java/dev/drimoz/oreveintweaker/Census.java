@@ -229,6 +229,11 @@ public final class Census {
             send(src, "Census " + dim + ": no chunk loaded within " + s.radius() * 16 + " blocks. Walk around, or use a bigger radius.");
             return false;
         }
+        if (s.rankedOres().isEmpty()) {
+            // The End has none; a pack's Nether or a flat world may not either.
+            send(src, "Census " + dim + ": " + s.loaded() + "/" + all + " chunks, and no ore in them.");
+            return false;
+        }
         MutableComponent line = Component.literal("Census " + dim + ": " + s.loaded() + "/" + all + " chunks, "
                 + s.rankedOres().size() + " ores, " + fmt(s.oreTotal()) + " (" + perChunk(s.oreTotal(), s.loaded()) + "/chunk)");
         if (s.loaded() < all) line.append(Component.literal("  only loaded chunks count").withStyle(ChatFormatting.GRAY));
@@ -413,7 +418,9 @@ public final class Census {
 
     /** First line: chunks counted; then block,total. Compared per chunk, so the area may differ a little. */
     private static int save(CommandSourceStack src, String name, Scan s) {
-        StringBuilder out = new StringBuilder("loaded,").append(s.loaded()).append('\n');
+        // The dimension too: an overworld count compared with a Nether one would be a list of nonsense.
+        StringBuilder out = new StringBuilder("loaded,").append(s.loaded()).append('\n')
+                .append("dimension,").append(s.level().dimension().location()).append('\n');
         s.total().forEach((k, v) -> out.append(k).append(',').append(v).append('\n'));
         try {
             Path file = saveFile(name);
@@ -437,8 +444,18 @@ public final class Census {
             return 0;
         }
         double before = Double.parseDouble(lines.get(0).substring("loaded,".length()));
+        int from = 1;
+        if (lines.size() > 1 && lines.get(1).startsWith("dimension,")) {
+            String saved = lines.get(1).substring("dimension,".length());
+            if (!saved.equals(s.level().dimension().location().toString())) {
+                send(src, "\"" + name + "\" was saved in " + saved + ", you are in " + s.level().dimension().location()
+                        + ": go there, or save another one here.");
+                return 0;
+            }
+            from = 2;
+        }
         Map<String, Double> old = new HashMap<>();
-        for (String l : lines.subList(1, lines.size())) {
+        for (String l : lines.subList(from, lines.size())) {
             int comma = l.lastIndexOf(',');
             old.put(l.substring(0, comma), Long.parseLong(l.substring(comma + 1)) / before);
         }
