@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
 - **More veins**: one TOML file per vein in `config/oreveintweaker/veins/`, as many as you want (same
   options as `[extra_N]`; an `_example.toml` is written on first start). `/oreveintweaker reload`
