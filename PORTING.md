@@ -19,6 +19,7 @@ What actually changed between branches is loader and vanilla API, never the logi
 | Config | `ForgeConfigSpec` | `ModConfigSpec` | `ModConfigSpec` |
 | Ids | `new ResourceLocation(s)` | `ResourceLocation.parse(s)` | `Identifier.parse(s)` |
 | Mod constructor | `FMLJavaModLoadingContext.get()` | `(IEventBus, ModContainer)` | same |
+| Census (`Census.java`) | `new ClickEvent(Action.RUN_COMMAND, s)`, `new HoverEvent(Action.SHOW_TEXT, c)`, `level.getMinSection()` / `getMaxSection()`, `Tags` from Forge | same, `Tags` from NeoForge | `new ClickEvent.RunCommand(s)`, `new ClickEvent.CopyToClipboard(s)`, `new HoverEvent.ShowText(c)`, `getMinSectionY()` / `getMaxSectionY()`, plus the `Identifier`, `hasPermission`, `getMinY()`, `ChunkPos.containing` and `x()`/`z()` changes below |
 | Dev tools only | `hasPermission(2)`, `getMinBuildHeight()`, `new ChunkPos(pos)`, `FMLLoader.isProduction()` | same | `Commands.hasPermission(LEVEL_GAMEMASTERS)`, `getMinY()`, `ChunkPos.containing(pos)` + `x()`, `FMLLoader.getCurrent().isProduction()`, `ClickEvent.SuggestCommand` |
 
 ## 26.3
