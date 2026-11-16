@@ -1,8 +1,8 @@
 # Ore Vein Tweaker
 
 Control Minecraft's large ore veins - the long ribbons of copper in granite and iron in tuff added in
-1.18 - from one config file: turn them off, resize them, make them richer or poorer, rebuild them from
-any block, or add new kinds of veins. Server-side only.
+1.18 - from plain config files: turn them off, resize them, make them richer or poorer, rebuild them
+from any block, or add as many new kinds of veins as you want, one small file each. Server-side only.
 
 This page is the full guide. The short version is the
 [CurseForge page](https://www.curseforge.com/minecraft/mc-mods/oreveintweaker).
