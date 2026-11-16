@@ -169,19 +169,18 @@ Shorter recipes, every option in detail and how precise the numbers are:
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 1.2.0
+## Release checklist: 1.2.1
 
-1.0.0 is published on CurseForge; 1.2.0 is an update of the same project. If 1.1.0 was never uploaded,
-put its section of `CHANGELOG.md` above 1.2.0's in the files' description: 1.2.0 contains it.
+1.2.0 is published; 1.2.1 is an update of the same project (the summary and the description above
+do not change, except the one line about `strip` if the page has it).
 
 - [x] The GitHub repository `DrimoZ/OreVeinTweaker` exists and has all branches - the page links to
       its README as the full guide.
-- [ ] Replace the summary and the description with the ones above.
 - [ ] Gallery (optional): before/after screenshots of the same seed, taken with `/oreveintweaker strip`
       (clears the stone around you so the veins show; use a throwaway world), and the census page
       (`census export`, then open the `.html` it wrote).
-- [ ] Three files, release type **Release**, each with the `## 1.2.0` section of `CHANGELOG.md`
-      (the jars are `oreveintweaker-1.2.0+<minecraft>.jar`, from `gradlew build` on each branch):
+- [ ] Three files, release type **Release**, each with the `## 1.2.1` section of `CHANGELOG.md`
+      (the jars are `oreveintweaker-1.2.1+<minecraft>.jar`, from `gradlew build` on each branch):
 
 | File | Game version | Loader | Java |
 |---|---|---|---|

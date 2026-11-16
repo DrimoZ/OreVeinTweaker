@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.1
+
+- **`/oreveintweaker strip` reworked.** It now runs a few chunks per tick, so the server no longer
+  freezes: a progress bar (percentage, blocks removed, time left) is on the action bar and
+  `strip cancel` stops it.
+- **Choose what goes and what stays.** A new `[strip]` config section holds a `keep` list and a `remove`
+  list (block ids from any mod, or `#tags`; `remove` wins, so even ores can go), the built-in rules as
+  options (`keep_ores`, `keep_storage_blocks`, `keep_bedrock`), the height range (`min_y`, `max_y`) and
+  the default radius. `strip keep|remove add|del|list|clear` edit the lists from the game, and the file
+  stays editable by hand.
+- **`strip only <blocks>`** removes just those blocks, once, ores included, and leaves the rest alone:
+  `strip only 8 limestone`. The height can be given for one run: `strip [radius] [min_y max_y]`.
+- **Pick blocks without typing ids**: `target` (the block you look at), `hand`, `hotbar`, `inventory`,
+  an id (the mod name may be left out when only one block has that name) or a `#tag`, with suggestions.
+- **Census page**: an ore's detail now opens inside the table, under its row, and `census export` ends
+  with an `[open]` button that opens the page in the browser.
+- Documentation: a vein file is now the documented way to add a vein; the three `[extra_N]` slots of the
+  config are a footnote.
+
 ## 1.2.0
 
 - **More veins**: one TOML file per vein in `config/oreveintweaker/veins/`, as many as you want (same
@@ -30,14 +49,9 @@
   and `raw_block_amount = 5`) could not be reproduced. Counts over one small area vary enormously
   (copper veins from 1 to 53,818 blocks over six areas), so the table compares settings on the same
   terrain; a new vein at `size = 1` has about four fifths of copper's volume and the same as iron's.
-- **New command `/oreveintweaker strip [radius] [min_y max_y]`** (permission level 2): clears everything
+- **New command `/oreveintweaker strip [radius]`** (permission level 2): clears everything below Y 64
   around you except ores, raw and storage blocks and bedrock, to see the veins on their own. Radius 0
-  to 16 chunks, height up to Y 64 by default. No undo. It runs a few chunks per tick (no server freeze),
-  with a progress bar on the action bar and `strip cancel`. The `[strip]` config section sets the radius,
-  the height and the built-in rules, and holds a `keep` and a `remove` list (block ids or `#tags`; `remove`
-  wins, so even ores can go). `strip keep|remove add|del|list|clear` edit them, and `strip only <blocks>`
-  removes just those blocks once. Blocks can be given as `target` (the one you look at), `hand`, `hotbar`,
-  `inventory`, an id or a tag.
+  to 16 chunks. No undo.
 
 ## 1.1.0
 
