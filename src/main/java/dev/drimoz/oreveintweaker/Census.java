@@ -420,7 +420,7 @@ public final class Census {
     private static int save(CommandSourceStack src, String name, Scan s) {
         // The dimension too: an overworld count compared with a Nether one would be a list of nonsense.
         StringBuilder out = new StringBuilder("loaded,").append(s.loaded()).append('\n')
-                .append("dimension,").append(s.level().dimension().location()).append('\n');
+                .append("dimension,").append(s.level().dimension().identifier()).append('\n');
         s.total().forEach((k, v) -> out.append(k).append(',').append(v).append('\n'));
         try {
             Path file = saveFile(name);
@@ -447,8 +447,8 @@ public final class Census {
         int from = 1;
         if (lines.size() > 1 && lines.get(1).startsWith("dimension,")) {
             String saved = lines.get(1).substring("dimension,".length());
-            if (!saved.equals(s.level().dimension().location().toString())) {
-                send(src, "\"" + name + "\" was saved in " + saved + ", you are in " + s.level().dimension().location()
+            if (!saved.equals(s.level().dimension().identifier().toString())) {
+                send(src, "\"" + name + "\" was saved in " + saved + ", you are in " + s.level().dimension().identifier()
                         + ": go there, or save another one here.");
                 return 0;
             }
