@@ -33,62 +33,55 @@ All defaults are vanilla: installing the mod changes nothing until you edit the 
 
 ## The config file
 
-Six sections: `[copper]` and `[iron]` for the vanilla veins, `[extra_1]` to `[extra_3]` for
-[new veins](#new-veins), and `[census]` for the [census command](#counting-what-generated). More new
-veins than three go in [their own files](#as-many-veins-as-you-want). Every option is also explained
-inside the file.
+`config/oreveintweaker-common.toml` tunes the two vanilla veins, `[copper]` and `[iron]`, and holds
+`[census]` for the [census command](#counting-what-generated). **New veins are not in this file: each
+one has its own small file** in `config/oreveintweaker/veins/`, as many as you want (see
+[New veins](#new-veins)). For older configs the file also keeps three slots, `[extra_1]` to `[extra_3]`,
+that do the same thing; they still work, but a vein file is the way to go. Every option is also explained
+inside the files.
+
+The options below are the same everywhere, in the main file and in a vein file:
 
 | Option | Default | What it does |
 |---|---|---|
-| `enabled` | `true` (`false` for new veins) | `false` = this vein never generates; plain stone or deepslate is left in its place. |
+| `enabled` | `true` (`false` for a slot) | `false` = this vein never generates; plain stone or deepslate is left in its place. |
 | `size` | `1.0` | Vein volume. `2.0` = about twice (thicker and more frequent), `0.5` = about half, `0` = none. `0` to `4.5`. |
 | `ore_amount` | `1.0` | Ore vs filler. `2.0` = twice the ore, `0` = filler only, `5.0` = only ore, no filler. `0` to `5`. |
 | `raw_block_amount` | `1.0` | Raw ore blocks among the ore. `5.0` = five times as many, `0` = none, `50` = nearly every ore is a raw block. `0` to `50`. |
 | `ore` | vanilla ore | Block used as ore. Any block id, from any mod, or a [palette](#palettes). |
 | `raw_block` | vanilla raw block | Block used as raw ore block (a palette works too). |
 | `filler` | granite / tuff | Block the ore sits in (a palette works too). |
-| `min_y`, `max_y` | per slot | New veins only: their height range. |
+| `min_y`, `max_y` | none | New veins only: their height range (required in a vein file). |
 
 **Order of effects.** `size` decides where veins are. Inside a vein, `ore_amount` decides ore vs
 filler, then `raw_block_amount` decides which ore becomes a raw block. Finally the blocks are swapped
 for `ore`, `raw_block` and `filler`.
 
 A block id that does not exist is reported in the log and the vanilla block (stone, for a new vein)
-is kept: a typo never breaks generation.
+is kept: a typo in a name never breaks generation. An entry that is not written properly (a weight
+that is not a positive number, for example) is different: in a vein file, that whole file is skipped
+and `/oreveintweaker reload` tells you why.
 
 ## New veins
 
-`[extra_1]`, `[extra_2]` and `[extra_3]` each add a new kind of large vein, off by default. They take
-every option above, plus `min_y` and `max_y`:
+A new vein is **one small TOML file** in `config/oreveintweaker/veins/`: as many files as you want,
+one kind of vein each. The first start writes an `_example.toml` there to copy (files starting with `_`
+are ignored). A file takes the options above, and some are required:
 
-- A vein is at most **110 blocks tall** (`max_y - min_y`): vanilla's vein noises only exist over
-  that height. Veins thin out over the 20 blocks at each end, like vanilla ones.
-- They are built by vanilla's own vein algorithm, with their own ribbons: they do not follow the
-  copper or iron veins. `size = 1` gives about as much vein as one vanilla type: they read the vein
-  noises at the heights of iron's veins, where measured over a large area they come out at about four
-  fifths of copper's volume and the same as iron's (see [How precise is it?](#how-precise-is-it)).
-- Where a new vein crosses a vanilla one, the vanilla vein wins.
-- They generate wherever large veins do - the Overworld, unless a datapack says otherwise.
-
-The slots come filled with examples, so turning one on is a single line:
-
-| Slot | Ore | Filler | Height |
-|---|---|---|---|
-| `extra_1` | deepslate gold ore | smooth basalt | Y -60 to -10 |
-| `extra_2` | coal ore | andesite | Y 0 to 60 |
-| `extra_3` | deepslate redstone ore | calcite | Y -60 to -20 |
-
-### As many veins as you want
-
-The config file has three slots; for more, put **one TOML file per vein** in
-`config/oreveintweaker/veins/`. A file takes the same options as an `[extra_N]` section (`min_y`,
-`max_y`, `ore` and `filler` are required, the rest has the defaults above) - the first start writes
-an `_example.toml` to copy:
+| Option | In a vein file |
+|---|---|
+| `ore` | **required** |
+| `filler` | **required** |
+| `min_y`, `max_y` | **required**, at most 110 apart |
+| `raw_block` | optional; when left out, the raw blocks are made of the `ore` block |
+| `size`, `ore_amount`, `raw_block_amount` | optional, `1.0` when left out |
+| `enabled` | optional, `true` when left out |
 
 ```toml
 # config/oreveintweaker/veins/zinc.toml
 size = 1.5
 ore = "create:zinc_ore*3, minecraft:copper_ore"
+raw_block = "create:raw_zinc_block"
 filler = "minecraft:calcite"
 min_y = -20
 max_y = 60
@@ -97,10 +90,35 @@ max_y = 60
 - **`/oreveintweaker reload`** (operators) re-reads the folder and the config without a restart and
   lists the veins that are on, and any file it had to skip, with the reason. A wrong file is skipped,
   never half-applied; files starting with `_` and `enabled = false` are ignored.
-- A vein keeps its shape and its rolls whatever the other files are: adding or removing a file never
-  moves the others. Where two veins meet, the config's slots win, then files in alphabetical order.
+- A vein is at most **110 blocks tall** (`max_y - min_y`): vanilla's vein noises only exist over
+  that height. For a taller vein, use two files, one above the other. Veins thin out over the 20
+  blocks at each end, like vanilla ones.
+- They are built by vanilla's own vein algorithm, with their own ribbons: they do not follow the
+  copper or iron veins. `size = 1` gives about as much vein as one vanilla type: they read the vein
+  noises at the heights of iron's veins, where measured over a large area they come out at about four
+  fifths of copper's volume and the same as iron's (see [How precise is it?](#how-precise-is-it)).
+- **The file name decides the ribbons.** A vein keeps its shape and its rolls whatever the other files
+  are, so adding or removing a file never moves the others. Renaming a file gives that vein new
+  ribbons, for the chunks generated afterwards.
+- Where a new vein crosses a vanilla one, the vanilla vein wins. Where two new veins meet, the
+  config's slots win, then the files in alphabetical order.
 - Each vein costs generation time: measured on 1.20.1, about **1-2% per vein** at 50 to 60 blocks of
-  height. Past 16 veins the log says so. A taller vein than 110 blocks is two files, one above the other.
+  height. Past 16 veins the log says so.
+- They generate wherever large veins do - the Overworld, unless a datapack says otherwise.
+
+### The three slots in the config file
+
+`[extra_1]`, `[extra_2]` and `[extra_3]` in `config/oreveintweaker-common.toml` are the same thing
+inside the main file: the options above plus `min_y` and `max_y`, off by default, no more than three.
+They are kept so that existing configs keep working. For anything new, prefer a vein file: no limit,
+and one file per vein is easier to read and to share. The slots come filled with examples, so turning
+one on is a single line:
+
+| Slot | Ore | Filler | Height |
+|---|---|---|---|
+| `extra_1` | deepslate gold ore | smooth basalt | Y -60 to -10 |
+| `extra_2` | coal ore | andesite | Y 0 to 60 |
+| `extra_3` | deepslate redstone ore | calcite | Y -60 to -20 |
 
 ### Palettes
 
@@ -110,7 +128,8 @@ and in vein files, and a single block behaves exactly as before.
 
 ## Recipes
 
-Copy the part you need into the config file; leave the other lines as they are.
+Copy the part you need into `config/oreveintweaker-common.toml`, leave the other lines as they are. The
+recipes that add a vein are a file of their own, with its path in the first line.
 
 **No large veins at all**
 ```toml
@@ -148,25 +167,31 @@ Copy the part you need into the config file; leave the other lines as they are.
     raw_block = "create:raw_zinc_block"
 ```
 
-**Gold veins, on top of iron**
+**Gold veins, on top of iron** - a new file, at iron's heights.
 ```toml
-[extra_1]
-    enabled = true
+# config/oreveintweaker/veins/gold.toml
+ore = "minecraft:deepslate_gold_ore"
+raw_block = "minecraft:raw_gold_block"
+filler = "minecraft:smooth_basalt"
+min_y = -60
+max_y = -10
 ```
 
-**Zinc veins next to copper** (Create)
+**Zinc veins next to copper** (Create) - a new file, at copper's heights.
 ```toml
-[extra_2]
-    enabled = true
-    ore = "create:zinc_ore"
-    raw_block = "create:raw_zinc_block"
-    filler = "minecraft:calcite"
+# config/oreveintweaker/veins/zinc.toml
+ore = "create:zinc_ore"
+raw_block = "create:raw_zinc_block"
+filler = "minecraft:calcite"
+min_y = 0
+max_y = 60
 ```
 
 ## Complete examples
 
-Four complete setups, one per kind of modpack. Put each line in the matching section of
-`config/oreveintweaker-common.toml`, in place of the same key; anything you do not paste stays as it is.
+Four complete setups, one per kind of modpack. The parts for `[copper]` and `[iron]` go in the matching
+section of `config/oreveintweaker-common.toml`, in place of the same key; anything you do not paste
+stays as it is. A new vein is a file of its own, named in the first line.
 
 **⚔️ Expert pack - rare veins, each one a jackpot**
 ```toml
@@ -182,43 +207,55 @@ Four complete setups, one per kind of modpack. Put each line in the matching sec
 
 **⚙️ Create pack - zinc gets its own veins**
 ```toml
+# config/oreveintweaker/veins/zinc.toml
 # Copper and iron stay vanilla. Zinc veins run in calcite, through the copper heights.
-[extra_1]
-    enabled = true
-    size = 0.8                          # a bit rarer than copper
-    ore = "create:zinc_ore"
-    raw_block = "create:raw_zinc_block"
-    filler = "minecraft:calcite"
-    min_y = 0
-    max_y = 70
+size = 0.8                          # a bit rarer than copper
+ore = "create:zinc_ore"
+raw_block = "create:raw_zinc_block"
+filler = "minecraft:calcite"
+min_y = 0
+max_y = 70
 ```
 
 **💰 Gold rush - the deep is gold and redstone**
 ```toml
+# config/oreveintweaker-common.toml
 # The iron veins become gold veins, a little poorer since gold is precious...
 [iron]
     ore = "minecraft:deepslate_gold_ore"
     raw_block = "minecraft:raw_gold_block"
     ore_amount = 0.6
-# ...and redstone veins in calcite join them (the slot's own defaults, Y -60 to -20).
-[extra_3]
-    enabled = true
+```
+```toml
+# config/oreveintweaker/veins/deep_redstone.toml
+# ...and redstone veins in calcite join them, deep down.
+ore = "minecraft:deepslate_redstone_ore"
+raw_block = "minecraft:redstone_block"
+filler = "minecraft:calcite"
+min_y = -60
+max_y = -20
 ```
 
 **🏛️ Builder pack - huge stone bands, no free ore**
 ```toml
-# The veins stay as wide decorative ribbons of granite, tuff and dripstone.
+# config/oreveintweaker-common.toml
+# The veins stay as wide decorative ribbons of granite and tuff...
 [copper]
     size = 2.5
     ore_amount = 0.0
 [iron]
     size = 2.5
     ore_amount = 0.0
-[extra_2]
-    enabled = true
-    size = 2.0
-    ore_amount = 0.0
-    filler = "minecraft:dripstone_block"
+```
+```toml
+# config/oreveintweaker/veins/dripstone.toml
+# ...and a third kind of ribbon, in dripstone. The ore is required but never appears: ore_amount is 0.
+size = 2.0
+ore_amount = 0.0
+ore = "minecraft:coal_ore"
+filler = "minecraft:dripstone_block"
+min_y = 0
+max_y = 60
 ```
 
 ## Commands
