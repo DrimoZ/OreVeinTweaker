@@ -581,10 +581,13 @@ public final class Census {
             if (in == null) throw new IOException("census.html is missing from the mod");
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
+        // Between two markers, never by looking for a line end: a Windows checkout turns the template's "\n" into
+        // "\r\n" (which made the first version fail, on all three branches, with an index of -1).
         int at = template.indexOf("/*DATA*/");
-        int end = template.indexOf(";\n", at);
+        int end = template.indexOf("/*END*/", at);
+        if (at < 0 || end < 0) throw new IOException("census.html has lost its data markers");
         // "</" would end the script block early.
-        return template.substring(0, at) + root.toString().replace("</", "<\\/") + template.substring(end);
+        return template.substring(0, at) + root.toString().replace("</", "<\\/") + template.substring(end + "/*END*/".length());
     }
 
     // ---------------------------------------------------------------- small helpers
