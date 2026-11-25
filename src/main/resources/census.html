@@ -21,9 +21,24 @@ header p{margin:4px 0 0}
 .mods button{all:unset;cursor:pointer;color:var(--mute);font-size:13px;padding:4px 0;border-bottom:2px solid transparent}
 .mods button:hover{color:var(--ink)}
 .mods button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--accent)}
-.tools{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.mods button:focus-visible,.x:focus-visible,#mk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tools{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-bottom:16px}
 .tools input[type=search]{flex:1 1 240px;max-width:360px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 .tools label{color:var(--mute);font-size:13px;display:flex;gap:8px;align-items:center}
+#mk{height:32px;padding:0 12px;border:1px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--accent);font:inherit;font-size:13px;cursor:pointer}
+#mk:hover{background:var(--select)}
+.tools.narrow{margin-bottom:8px;gap:4px 24px}
+.tools.narrow .mods{margin:0}
+.hint2{margin-left:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--surface)}
+.seg button{all:unset;cursor:pointer;height:30px;padding:0 14px;font-size:13px;line-height:30px;color:var(--mute)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--select);color:var(--ink);font-weight:600}
+.seg button:focus-visible,.ib:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sortbox{display:inline-flex;align-items:center;gap:8px}
+select{height:32px;padding:0 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.ib{all:unset;cursor:pointer;width:32px;height:32px;line-height:30px;text-align:center;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)}
+.ib:hover{background:var(--hover)}
 .layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
 .tablewrap{background:var(--surface);border-radius:8px;overflow:auto}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
@@ -37,8 +52,13 @@ tbody tr{cursor:pointer}
 tbody tr:hover{background:var(--hover)}
 tbody tr[aria-selected=true]{background:var(--select)}
 tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+tbody tr.member,tbody tr.member:hover{cursor:default;background:var(--bg)}
+tr.member td:first-child{padding-left:36px}
+tr.group td:first-child{font-weight:600}
+.x{all:unset;cursor:pointer;color:var(--mute);margin-left:8px;padding:0 6px;font-size:16px}
+.x:hover{color:var(--ink)}
 .dot{display:inline-block;width:8px;height:8px;margin-right:12px;vertical-align:0}
-.who{color:var(--mute);margin-left:8px;font-size:12px}
+.who{color:var(--mute);margin-left:8px;font-size:12px;font-weight:400}
 .mark{display:inline-block;height:8px;vertical-align:baseline;margin-right:8px}
 /* The detail is a row of its own under the clicked ore: it opens where the eye already is. */
 tbody tr.detail,tbody tr.detail:hover{cursor:default;background:var(--select)}
@@ -56,30 +76,53 @@ footer{color:var(--mute);font-size:12px;margin-top:24px}
 <body>
 <main>
 <header>
-  <h1>Ore census</h1>
+  <h1 data-t="title">Ore census</h1>
   <p class="mute" id="sub"></p>
   <p id="sum" style="margin:16px 0 0"></p>
 </header>
-<nav class="mods" id="mods" aria-label="Filter by mod"></nav>
+<!-- One bar, three jobs: find (search, group), look (view, sort), narrow (mod, raw blocks). -->
 <div class="tools">
   <input type="search" id="q" placeholder="Search an ore" aria-label="Search an ore">
-  <label><input type="checkbox" id="allBlocks"> Also raw and storage blocks</label>
-  <span class="mute">Click an ore to see where it generates.</span>
+  <button id="mk" hidden data-t="make_group">Group these ores</button>
+  <div class="seg" role="group" id="view" aria-label="View">
+    <button id="vAll" data-t="view_all">All ores</button><button id="vGrp" data-t="grouped">Grouped</button>
+  </div>
+  <span class="sortbox"><label for="sortSel" class="mute" data-t="sort">Sort by</label>
+    <select id="sortSel"></select><button id="dir" class="ib"></button></span>
 </div>
+<div class="tools narrow">
+  <nav class="mods" id="mods" aria-label="Filter by mod"></nav>
+  <label><input type="checkbox" id="allBlocks"> <span data-t="all_blocks">Also raw and storage blocks</span></label>
+  <span class="mute hint2" data-t="click_hint">Click an ore to see where it generates.</span>
+</div>
+<p id="match" aria-live="polite" style="margin:0 0 12px"></p>
 <div class="layout">
   <div class="tablewrap"><table>
     <thead><tr id="head"></tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
 </div>
-<footer>Ore Vein Tweaker. These are the blocks found in the world, whatever generated them, in the chunks that were loaded.</footer>
+<footer data-t="footer">Ore Vein Tweaker. These are the blocks found in the world, whatever generated them, in the chunks that were loaded.</footer>
 </main>
 <script>
-const DATA = /*DATA*/{"ores":[],"minY":0,"height":16,"loaded":0,"side":1,"radius":0,"dimension":"","seed":"","date":"","center":[0,0]}/*END*/;
+const DATA = /*DATA*/{"ores":[],"minY":0,"height":16,"loaded":0,"side":1,"radius":0,"dimension":"","seed":"","date":"","center":[0,0],"i18n":{"en":{}}}/*END*/;
 const $ = id => document.getElementById(id);
-const fmt = n => n.toLocaleString("en-US");
-const fmt1 = n => n.toLocaleString("en-US", {maximumFractionDigits: 1, minimumFractionDigits: 1});
+
+// Language: ?lang=fr, else the browser's, else English. The texts of every language travel in the page.
+const I18N = DATA.i18n || {en: {}};
+const LANG = [new URLSearchParams(location.search).get("lang"), ...(navigator.languages || [navigator.language])]
+  .map(l => (l || "").slice(0, 2).toLowerCase()).find(l => I18N[l]) || "en";
+const t = (k, ...a) => String(I18N[LANG][k] ?? (I18N.en || {})[k] ?? k).replace(/\{(\d+)\}/g, (m, i) => +i < a.length ? a[+i] : m);
+document.documentElement.lang = LANG;
+document.title = t("title");
+for (const e of document.querySelectorAll("[data-t]")) e.textContent = t(e.dataset.t);
+$("q").placeholder = $("q").ariaLabel = t("search");
+$("mods").ariaLabel = t("mods_aria");
+
+const fmt = n => n.toLocaleString(LANG);
+const fmt1 = n => n.toLocaleString(LANG, {maximumFractionDigits: 1, minimumFractionDigits: 1});
 const readable = id => { const p = id.split(":").pop().replace(/_/g, " "); return p[0].toUpperCase() + p.slice(1); };
+const label = o => o.group ? o.name : readable(o.id);
 const dark = () => matchMedia("(prefers-color-scheme: dark)").matches;
 
 // Ore colours: a hue per ore, then lightness moved until the mark reaches 3:1 on the surface (WCAG 1.4.11).
@@ -110,36 +153,97 @@ for (const o of DATA.ores) o.share = o.ore && oreTotal ? 100 * o.total / oreTota
 const mods = {};
 for (const o of oreList) { const m = mods[o.mod] = mods[o.mod] || {n: 0, total: 0}; m.n++; m.total += o.total; }
 
-$("sub").textContent = DATA.dimension + ", seed " + DATA.seed + ", " + DATA.loaded + " chunks around chunk "
-  + DATA.center[0] + " " + DATA.center[1] + " (radius " + DATA.radius + "), " + DATA.date;
-$("sum").innerHTML = "<b>" + fmt(oreList.length) + "</b> ore types, <b>" + fmt(oreTotal) + "</b> blocks, <b>"
-  + fmt(Math.round(oreTotal / Math.max(1, DATA.loaded))) + "</b> per chunk, from <b>" + Object.keys(mods).length + "</b> "
-  + (Object.keys(mods).length === 1 ? "mod." : "mods.");
+$("sub").textContent = t("sub", DATA.dimension, DATA.seed, DATA.loaded, DATA.center[0], DATA.center[1], DATA.radius, DATA.date);
+$("sum").innerHTML = t(Object.keys(mods).length === 1 ? "sum_one" : "sum", fmt(oreList.length), fmt(oreTotal),
+  fmt(Math.round(oreTotal / Math.max(1, DATA.loaded))), Object.keys(mods).length);
 
-let modFilter = null, sortKey = "total", sortDir = -1, selected = null;
+// Groups: "bituminous" is one ore in every stone it comes in, each a block of its own. A group is a text
+// (every ore whose name contains it); the list is kept in this browser, so it is there the next time.
+const hit = (o, q) => o.id.toLowerCase().includes(q) || readable(o.id).toLowerCase().includes(q);
+let groups = [];
+try { groups = JSON.parse(localStorage.getItem("ovt-groups") || "[]").filter(g => g && g.name && g.q); } catch (e) {}
+const saveGroups = () => { try { localStorage.setItem("ovt-groups", JSON.stringify(groups)); } catch (e) {} };
+
+// A group is shaped like an ore (its blocks, its profile by height, its map), so the table and the detail need no second code path.
+function makeGroup(g, members) {
+  const total = members.reduce((a, o) => a + o.total, 0), withY = members.filter(o => o.y);
+  const lo = Math.min(...withY.map(o => o.y0)), hi = Math.max(...withY.map(o => o.y0 + o.y.length));
+  let y, y0;
+  if (withY.length) { y0 = lo; y = new Array(hi - lo).fill(0); for (const o of withY) o.y.forEach((n, i) => { y[o.y0 - lo + i] += n; }); }
+  const grid = members.every(o => o.grid) ? members[0].grid.map((_, i) => members.reduce((a, o) => a + o.grid[i], 0)) : undefined;
+  let best = 0, peak = null;
+  (y || []).forEach((n, i) => { if (n > best) { best = n; peak = y0 + i; } });
+  return {id: "group:" + g.name, name: g.name, group: true, q: g.q, members, ore: true, total, y, y0, grid, peak, max: best,
+    mod: members.every(o => o.mod === members[0].mod) ? members[0].mod : "",
+    perChunk: total / Math.max(1, DATA.loaded), share: oreTotal ? 100 * total / oreTotal : null};
+}
+// Grouped view: each group once (an ore goes to the first group that wants it), then the ores left alone.
+// Two kinds of group. Yours (a text, above) come first. Then the pack's own: ores sharing a tag
+// (#c:ores/coal), which is the author saying "these are the same ore" - no list to keep in this mod.
+function families() {
+  const f = {};
+  for (const o of oreList) if (o.fam) (f[o.fam] = f[o.fam] || []).push(o);
+  return Object.entries(f).filter(([, m]) => m.length > 1);
+}
+const canGroup = () => groups.length > 0 || families().length > 0;
+function pool() {
+  if (!grouped || !canGroup()) return DATA.ores;
+  const mine = o => !modFilter || o.mod === modFilter;
+  const taken = new Set(), out = [];
+  for (const g of groups) {
+    const q = g.q.toLowerCase(), m = oreList.filter(o => mine(o) && !taken.has(o) && hit(o, q));
+    if (m.length) { m.forEach(o => taken.add(o)); out.push(makeGroup(g, m)); }
+  }
+  for (const [fam, all] of families()) {
+    const m = all.filter(o => mine(o) && !taken.has(o));
+    if (m.length > 1) { m.forEach(o => taken.add(o)); out.push(Object.assign(makeGroup({name: readable(fam), q: "#c:ores/" + fam}, m), {auto: true, id: "group:#" + fam})); }
+  }
+  return out.concat(DATA.ores.filter(o => !taken.has(o)));
+}
+
+let modFilter = null, sortKey = "total", sortDir = -1, selected = null, grouped = false;
 function renderMods() {
   $("mods").innerHTML = "";
-  const add = (label, value) => { const b = document.createElement("button");
-    b.textContent = label; b.setAttribute("aria-pressed", modFilter === value);
+  const add = (text, value) => { const b = document.createElement("button");
+    b.textContent = text; b.setAttribute("aria-pressed", modFilter === value);
     b.onclick = () => { modFilter = value; renderMods(); renderRows(); }; $("mods").appendChild(b); };
   if (Object.keys(mods).length < 2) return;
-  add("All mods", null);
+  add(t("all_mods"), null);
   for (const [m, v] of Object.entries(mods).sort((a, b) => b[1].total - a[1].total))
     add(m + " " + (100 * v.total / oreTotal).toFixed(v.total / oreTotal < .1 ? 1 : 0) + "%", m);
 }
 const COLS = [
-  ["id", "Ore", o => readable(o.id)], ["total", "Blocks", o => o.total], ["perChunk", "Per chunk", o => o.perChunk],
-  ["share", "Share of ores", o => o.share == null ? -1 : o.share], ["peak", "Peak Y", o => o.peak == null ? -9999 : o.peak],
-  ["profile", "By height", null]];
+  ["id", t("col_ore"), o => label(o)], ["total", t("col_blocks"), o => o.total], ["perChunk", t("col_chunk"), o => o.perChunk],
+  ["share", t("col_share"), o => o.share == null ? -1 : o.share], ["peak", t("col_peak"), o => o.peak == null ? -9999 : o.peak],
+  ["profile", t("col_profile"), null]];
+// Sorting has two doors, a column header and the Sort by box: both end here, so they always agree.
+function setSort(k) {
+  sortDir = sortKey === k ? -sortDir : (k === "id" ? 1 : -1); sortKey = k;
+  renderHead(); renderRows();
+}
+function renderSort() {
+  const sel = $("sortSel");
+  if (!sel.options.length) for (const [k, text, f] of COLS) if (f) sel.add(new Option(text, k));
+  sel.value = sortKey;
+  $("dir").textContent = sortDir < 0 ? "▼" : "▲";
+  $("dir").title = $("dir").ariaLabel = t("reverse");
+}
 function renderHead() {
   $("head").innerHTML = "";
-  for (const [k, label, f] of COLS) {
-    const th = document.createElement("th"); th.textContent = label;
+  for (const [k, text, f] of COLS) {
+    const th = document.createElement("th"); th.textContent = text;
     if (f) { if (sortKey === k) th.setAttribute("aria-sort", sortDir < 0 ? "descending" : "ascending");
-      th.onclick = () => { sortDir = sortKey === k ? -sortDir : (k === "id" ? 1 : -1); sortKey = k; renderHead(); renderRows(); }; }
+      th.onclick = () => setSort(k); }
     else th.className = "nosort";
     $("head").appendChild(th);
   }
+  renderSort();
+}
+function setView(on) {
+  grouped = on && canGroup();
+  $("vAll").setAttribute("aria-pressed", !grouped); $("vGrp").setAttribute("aria-pressed", grouped);
+  $("vGrp").title = canGroup() ? t("auto_hint") : t("no_groups");
+  renderRows();
 }
 // One 16-block band per bar over the whole world height, so every row reads on the same scale.
 function spark(o) {
@@ -151,37 +255,57 @@ function spark(o) {
     s += '<rect x="' + i * w + '" y="' + (h - bh) + '" width="' + (w - 1) + '" height="' + bh + '" fill="' + o.color + '"/>'; });
   return s + "</svg>";
 }
-function visible() {
+function visible(from) {
   const q = $("q").value.trim().toLowerCase(), all = $("allBlocks").checked, col = COLS.find(c => c[0] === sortKey)[2];
-  return DATA.ores.filter(o => (all || o.ore) && (!modFilter || o.mod === modFilter) && (!q || o.id.toLowerCase().includes(q) || readable(o.id).toLowerCase().includes(q)))
+  return from.filter(o => (all || o.ore) && (o.group || !modFilter || o.mod === modFilter) && (!q || hit(o, q) || (o.group && o.name.toLowerCase().includes(q))))
     .sort((a, b) => { const x = col(a), y = col(b); return (x < y ? -1 : x > y ? 1 : 0) * sortDir; });
 }
+const same = o => selected && o.id === selected.id;
 function renderRows() {
-  for (const o of DATA.ores) o.color = colorOf(o.id);
-  const rows = visible(), maxShare = Math.max(...rows.map(o => o.share || 0), 1);
-  $("rows").innerHTML = rows.length ? "" : '<tr><td colspan="6" class="hint">Nothing matches.</td></tr>';
-  rows.forEach((o, i) => {
-    const tr = document.createElement("tr"); tr.tabIndex = 0; tr.title = o.id;
-    tr.setAttribute("aria-selected", o === selected);
-    tr.innerHTML = '<td><span class="dot" style="background:' + o.color + '"></span>' + readable(o.id)
-      + (o.mod !== "minecraft" ? '<span class="who">' + o.mod + "</span>" : "") + (o.ore ? "" : '<span class="who">block</span>') + "</td>"
+  const from = pool();
+  for (const o of from.concat(DATA.ores)) o.color = colorOf(o.id);
+  const rows = visible(from), maxShare = Math.max(...rows.map(o => o.share || 0), 1);
+  // A search is also a group ("bituminous": every stone it comes in): its total is what the matching ores add up to.
+  const q = $("q").value.trim().toLowerCase();
+  const found = q ? oreList.filter(o => (!modFilter || o.mod === modFilter) && hit(o, q)) : [], blocks = found.reduce((a, o) => a + o.total, 0);
+  $("match").innerHTML = found.length
+    ? t(found.length === 1 ? "match_one" : "match", fmt(found.length), fmt(blocks), fmt1(blocks / Math.max(1, DATA.loaded)), fmt1(oreTotal ? 100 * blocks / oreTotal : 0)) : "";
+  $("mk").hidden = !(found.length > 1 && !groups.some(g => g.q.toLowerCase() === q));
+  $("rows").innerHTML = rows.length ? "" : '<tr><td colspan="6" class="hint">' + t("nothing") + "</td></tr>";
+  let k = 0;
+  const addRow = (o, sub) => {
+    const tr = document.createElement("tr"); tr.title = o.id;
+    tr.className = sub ? "member" : o.group ? "group" : "";
+    tr.innerHTML = '<td><span class="dot" style="background:' + o.color + '"></span>' + label(o)
+      + (o.group ? '<span class="who">' + t(o.members.length === 1 ? "members_one" : "members", o.members.length) + "</span>"
+        : (o.mod !== "minecraft" ? '<span class="who">' + o.mod + "</span>" : "") + (o.ore ? "" : '<span class="who">' + t("block") + "</span>")) + "</td>"
       + "<td>" + fmt(o.total) + "</td><td>" + fmt1(o.perChunk) + "</td><td>"
-      + (o.share == null ? '<span class="mute">-</span>' : '<span class="mark" style="width:' + Math.max(2, 64 * o.share / maxShare) + 'px;background:' + o.color + '"></span>' + o.share.toFixed(1) + "%")
+      + (o.share == null ? '<span class="mute">-</span>' : '<span class="mark" style="width:' + Math.max(2, 64 * o.share / maxShare) + 'px;background:' + o.color + '"></span>' + fmt1(o.share) + "%")
       + "</td><td>" + (o.peak == null ? "-" : o.peak) + "</td><td>" + spark(o) + "</td>";
+    $("rows").appendChild(tr);
+    if (sub) return;
+    const i = k++; tr.tabIndex = 0; tr.setAttribute("aria-selected", same(o));
+    if (o.group && !o.auto) {
+      const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = x.ariaLabel = t("ungroup");
+      x.onclick = e => { e.stopPropagation(); groups = groups.filter(g => g.name !== o.name); saveGroups(); if (same(o)) selected = null; setView(grouped); };
+      tr.firstChild.appendChild(x);
+    }
     // Clicking the open ore closes it. The detail row is never focusable, so arrows skip it.
-    const pick = () => { selected = o === selected ? null : o; history.replaceState(null, "", selected ? "#" + o.id : location.pathname); renderRows(); const r = $("rows").querySelectorAll("tr[tabindex]")[i]; if (r) r.focus({preventScroll: true}); };
+    const pick = () => { selected = same(o) ? null : o; history.replaceState(null, "", selected && !o.group ? "#" + o.id : location.pathname + location.search); renderRows(); const r = $("rows").querySelectorAll("tr[tabindex]")[i]; if (r) r.focus({preventScroll: true}); };
     tr.onclick = pick;
     const step = (from, dir) => { let n = from[dir]; while (n && !n.hasAttribute("tabindex")) n = n[dir]; return n; };
     tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
       else if (e.key === "ArrowDown") { e.preventDefault(); const n = step(tr, "nextSibling"); if (n) n.focus(); }
       else if (e.key === "ArrowUp") { e.preventDefault(); const n = step(tr, "previousSibling"); if (n) n.focus(); } };
-    $("rows").appendChild(tr);
-    if (o === selected) {
+    if (same(o)) {
+      selected = o; // the group objects are made again at each render
       const d = document.createElement("tr"); d.className = "detail";
       d.innerHTML = '<td colspan="6"><div id="detail" aria-live="polite"></div></td>';
       $("rows").appendChild(d); renderDetail();
+      if (o.group) [...o.members].sort((a, b) => b.total - a.total).forEach(m => addRow(m, true));
     }
-  });
+  };
+  rows.forEach(o => addRow(o, false));
 }
 function profile(o) {
   // The axis fits the ore, not the world: an ore found over 130 blocks of a 384-block world would leave
@@ -192,7 +316,7 @@ function profile(o) {
   if (top - low < 64) top = low + 64;
   const span = top - low, step = span <= 96 ? 16 : span <= 192 ? 32 : 64;
   const W = 300, H = Math.min(440, Math.max(180, span * 3)), max = Math.max(o.max, 1), pad = 36;
-  let s = '<svg viewBox="0 0 ' + (W + pad) + " " + (H + 16) + '" width="100%" role="img" aria-label="Blocks per Y level">';
+  let s = '<svg viewBox="0 0 ' + (W + pad) + " " + (H + 16) + '" width="100%" role="img" aria-label="' + t("profile") + '">';
   for (let y = Math.ceil(low / step) * step; y <= top; y += step) {
     const py = 8 + H * (top - y) / span;
     s += '<line x1="' + pad + '" x2="' + (W + pad) + '" y1="' + py + '" y2="' + py + '" stroke="var(--line)"/>'
@@ -220,21 +344,35 @@ function renderDetail() {
   let half = "";
   if (o.y && o.total) { let c = 0, lo = null, hi = null;
     o.y.forEach((n, i) => { c += n; if (lo === null && c >= o.total / 4) lo = o.y0 + i; if (hi === null && c >= o.total * 3 / 4) hi = o.y0 + i; });
-    half = "Half of it lies between Y " + lo + " and " + hi + ". "; }
-  $("detail").innerHTML = "<div><h2>" + readable(o.id) + ' <span class="mute">' + o.id + "</span></h2>"
-    + '<p class="lead">' + fmt(o.total) + " blocks, " + fmt1(o.perChunk) + " per chunk" + (o.share != null ? ", " + o.share.toFixed(1) + "% of ores" : "") + ".</p>"
-    + '<p class="mute">' + half + (o.y ? "Found from Y " + o.y0 + " to " + (o.y0 + o.y.length - 1) + "." : "") + "</p></div>"
-    + "<div><h3>Blocks per Y level</h3>" + profile(o) + "</div>"
-    + (o.grid ? "<div><h3>Per chunk, west to east and north to south</h3><canvas id='heat'></canvas></div>" : "");
+    half = t("half", lo, hi) + " "; }
+  const lead = o.share != null ? t("lead_share", fmt(o.total), fmt1(o.perChunk), fmt1(o.share)) : t("lead", fmt(o.total), fmt1(o.perChunk));
+  $("detail").innerHTML = "<div><h2>" + label(o) + ' <span class="mute">' + (o.group ? o.q : o.id) + "</span></h2>"
+    + '<p class="lead">' + lead + "</p>"
+    + '<p class="mute">' + half + (o.y ? t("found", o.y0, o.y0 + o.y.length - 1) : "") + "</p></div>"
+    + "<div><h3>" + t("profile") + "</h3>" + profile(o) + "</div>"
+    + (o.grid ? "<div><h3>" + t("heat") + "</h3><canvas id='heat'></canvas></div>" : "");
   if (o.grid) heat(o, $("heat"));
 }
 $("q").oninput = renderRows; $("allBlocks").onchange = renderRows;
+$("vAll").onclick = () => setView(false); $("vGrp").onclick = () => setView(true);
+$("view").ariaLabel = t("view_aria");
+// Choosing the key keeps its own natural order (names up, numbers down); the arrow button reverses it.
+$("sortSel").onchange = () => { const k = $("sortSel").value; sortKey = null; setSort(k); };
+$("dir").onclick = () => { sortDir = -sortDir; renderHead(); renderRows(); };
+// "Group these": the text typed in the search becomes a group, and the grouped view comes on.
+$("mk").onclick = () => {
+  const q = $("q").value.trim();
+  const name = (prompt(t("group_name"), q) || "").trim();
+  if (!name || !q) return;
+  groups = groups.filter(g => g.name !== name).concat({name, q}); saveGroups();
+  $("q").value = ""; setView(true);
+};
 matchMedia("(prefers-color-scheme: dark)").onchange = renderRows;
 renderMods(); renderHead();
 // A link to one ore: census.html#create:zinc_ore (or just #zinc_ore).
 const want = decodeURIComponent(location.hash.slice(1)).toLowerCase();
 if (want) selected = DATA.ores.find(o => o.id.toLowerCase() === want || o.id.toLowerCase().endsWith(":" + want)) || null;
-renderRows();
+setView(groups.length > 0);
 </script>
 </body>
 </html>

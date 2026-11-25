@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Census totals for a group of ores.** `census ore <part of a name>` and the export page's search box
+  now give the combined blocks, per-chunk figure and share of every ore that matches (all the stones
+  one ore comes in, for example).
+- **Groups on the census page.** An "All ores / Grouped" switch swaps the table between the full list
+  and one row per group. Ores sharing a `c:ores/<name>` tag are grouped automatically (Coal = coal ore +
+  every mod's coal variants), and "Group these ores" turns a search into a group of your own, kept in the
+  browser. A group opens into its members and has its own profile by height and map.
+- **The census is translated**: English, French, Spanish, German, Portuguese, Russian and Chinese, in
+  the chat (the language of the game, sent by the client: still nothing to install on it) and on the
+  page (the browser's language, or `?lang=`). The other commands stay in English for now.
+- `gradlew test`: JUnit tests for the language files (same keys and placeholders in every language, and
+  every key the page asks for) and for the grouping.
+
 ## 1.2.1
 
 - **`/oreveintweaker strip` reworked.** It now runs a few chunks per tick, so the server no longer
