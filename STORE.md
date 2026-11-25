@@ -42,7 +42,7 @@ tuff, studded with raw ore blocks. **Ore Vein Tweaker** lets you decide what the
 - 🧱 **Rebuild them** from any block of any mod - zinc veins for Create, gold veins...
 - ✨ **Add new veins** - as many as you want, one small file each, at the heights you choose
 - 🎲 **Mix blocks** - `"create:zinc_ore*3, minecraft:copper_ore"`: weighted palettes for ore, raw blocks and filler
-- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, even with dozens of modded ores: a short summary in the chat, a web page with everything (sortable, by mod, by height) and CSV files, and a comparison of two configs
+- 📊 **Count your ores** - `/oreveintweaker census` shows how much of each ore is around you, even with dozens of modded ores: a short summary in the chat, a web page with everything (sortable, by mod, by height, grouped by ore: a mod's dense or per-stone variants add up to one row) and CSV files, and a comparison of two configs. In English, French, Spanish, German, Portuguese, Russian and Chinese
 
 A config file, and one small file per new vein. No datapack. **Server-side only**: players don't need it.
 Works with terrain mods like Terralith and Tectonic.
@@ -169,18 +169,19 @@ Shorter recipes, every option in detail and how precise the numbers are:
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 1.2.1
+## Release checklist: 1.3.0
 
-1.2.0 is published; 1.2.1 is an update of the same project (the summary and the description above
-do not change, except the one line about `strip` if the page has it).
+1.2.1 is published; 1.3.0 is an update of the same project (the summary and the description above
+do not change, except the census line: groups and languages).
 
 - [x] The GitHub repository `DrimoZ/OreVeinTweaker` exists and has all branches - the page links to
       its README as the full guide.
 - [ ] Gallery (optional): before/after screenshots of the same seed, taken with `/oreveintweaker strip`
       (clears the stone around you so the veins show; use a throwaway world), and the census page
-      (`census export`, then open the `.html` it wrote).
-- [ ] Three files, release type **Release**, each with the `## 1.2.1` section of `CHANGELOG.md`
-      (the jars are `oreveintweaker-1.2.1+<minecraft>.jar`, from `gradlew build` on each branch):
+      (`census export`, then open the `.html` it wrote; the **Grouped** view with a modded pack is
+      the one worth showing).
+- [ ] Three files, release type **Release**, each with the `## 1.3.0` section of `CHANGELOG.md`
+      (the jars are `oreveintweaker-1.3.0+<minecraft>.jar`, from `gradlew build` on each branch):
 
 | File | Game version | Loader | Java |
 |---|---|---|---|
