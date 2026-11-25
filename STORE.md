@@ -192,8 +192,10 @@ and the description above do not change, except the census line (groups and lang
 | the jar built on branch `1.21.1` | 1.21.1 | NeoForge | 21 |
 | the jar built on branch `26.1` | 26.1.2 | NeoForge | 25 |
 
-- [ ] Modrinth: the project is still a **draft**. Before the first public version: a gallery image, the
-      tags, the content disclosures, then **Submit for review**.
+- [x] Modrinth: gallery image (the banner), tags (Utility, World Generation) and content disclosures
+      (AI-generated code and text) are set, and the project was **submitted for review** on 2026-11-25.
+      It is public once the moderators approve it. The site's own project description is not yet
+      updated with the census line above.
 
 - [ ] Environment: **Server** required, **client optional** (`displayTest = "IGNORE_ALL_VERSION"`, no
       packets). Check once per loader that an unmodded client joins a server that has it.
