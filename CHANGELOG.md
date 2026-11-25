@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0
 
 - **Census totals for a group of ores.** `census ore <part of a name>` and the export page's search box
   now give the combined blocks, per-chunk figure and share of every ore that matches (all the stones
