@@ -171,8 +171,9 @@ Shorter recipes, every option in detail and how precise the numbers are:
 
 ## Release checklist: 1.3.0
 
-1.2.1 is published; 1.3.0 is an update of the same project (the summary and the description above
-do not change, except the census line: groups and languages).
+1.2.0 is the last version published on CurseForge; 1.2.1 was never uploaded, so 1.3.0 carries its
+changes too (the changelog of the files lists both). It is an update of the same project: the summary
+and the description above do not change, except the census line (groups and languages).
 
 - [x] The GitHub repository `DrimoZ/OreVeinTweaker` exists and has all branches - the page links to
       its README as the full guide.
@@ -180,14 +181,19 @@ do not change, except the census line: groups and languages).
       (clears the stone around you so the veins show; use a throwaway world), and the census page
       (`census export`, then open the `.html` it wrote; the **Grouped** view with a modded pack is
       the one worth showing).
-- [ ] Three files, release type **Release**, each with the `## 1.3.0` section of `CHANGELOG.md`
-      (the jars are `oreveintweaker-1.3.0+<minecraft>.jar`, from `gradlew build` on each branch):
+- [x] Three files, release type **Release**, each with the `## 1.3.0` section of `CHANGELOG.md`
+      (the jars are `oreveintweaker-1.3.0+<minecraft>.jar`, from `gradlew build` on each branch).
+      Uploaded 2026-11-25 to CurseForge (waiting for approval) and to Modrinth (three versions
+      `1.3.0+<minecraft>`); also attached to the GitHub release `v1.3.0`. The files:
 
 | File | Game version | Loader | Java |
 |---|---|---|---|
 | the jar built on branch `1.20.1` | 1.20.1 | Forge | 17 |
 | the jar built on branch `1.21.1` | 1.21.1 | NeoForge | 21 |
 | the jar built on branch `26.1` | 26.1.2 | NeoForge | 25 |
+
+- [ ] Modrinth: the project is still a **draft**. Before the first public version: a gallery image, the
+      tags, the content disclosures, then **Submit for review**.
 
 - [ ] Environment: **Server** required, **client optional** (`displayTest = "IGNORE_ALL_VERSION"`, no
       packets). Check once per loader that an unmodded client joins a server that has it.
