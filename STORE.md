@@ -194,8 +194,10 @@ and the description above do not change, except the census line (groups and lang
 
 - [x] Modrinth: gallery image (the banner), tags (Utility, World Generation) and content disclosures
       (AI-generated code and text) are set, and the project was **submitted for review** on 2026-11-25.
-      It is public once the moderators approve it. The site's own project description is not yet
-      updated with the census line above.
+      It is public once the moderators approve it. The census line above is in the CurseForge
+      description; on Modrinth it still has to be pasted (Settings > Description): while the project is
+      in review, Modrinth refuses any save because its link check fails on every GitHub link (tracker,
+      source, wiki, banner images), although they answer 200. Retry once the review is done.
 
 - [ ] Environment: **Server** required, **client optional** (`displayTest = "IGNORE_ALL_VERSION"`, no
       packets). Check once per loader that an unmodded client joins a server that has it.
