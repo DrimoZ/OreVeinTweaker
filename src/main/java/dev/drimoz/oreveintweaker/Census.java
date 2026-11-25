@@ -65,6 +65,15 @@ public final class Census {
 
     private Census() {}
 
+    /**
+     * A text in the language of whoever ran the command (the console gets English): the mod is server-side only,
+     * so the client's language comes from what it told the server. Loader-API line: see PORTING.md.
+     */
+    private static String t(CommandSourceStack src, String key, Object... args) {
+        var player = src.getPlayer();
+        return Lang.tr(player == null ? null : player.clientInformation().language(), key, args);
+    }
+
     static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("oreveintweaker")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -118,7 +127,7 @@ public final class Census {
     private static int named(CommandContext<CommandSourceStack> ctx, int radius, boolean save) {
         String name = StringArgumentType.getString(ctx, "name");
         if (!name.matches("[A-Za-z0-9_-]{1,32}")) {
-            send(ctx.getSource(), "A name is letters, digits, - and _ (32 at most).");
+            send(ctx.getSource(), t(ctx.getSource(), "bad_name"));
             return 0;
         }
         Scan scan = scan(ctx.getSource(), radius, false);
@@ -136,7 +145,7 @@ public final class Census {
                         TreeMap<Integer, Map<String, Long>> bands, Set<String> ores,
                         Map<String, long[]> exactByY, List<ChunkCounts> chunks, List<String> unknown,
                         Map<String, Long> total, List<Map.Entry<String, Long>> rankedOres,
-                        List<Map.Entry<String, Long>> rankedOthers, long oreTotal) {
+                        List<Map.Entry<String, Long>> rankedOthers, long oreTotal, Map<String, String> families) {
         int side() { return radius * 2 + 1; }
     }
 
@@ -154,6 +163,7 @@ public final class Census {
 
         TreeMap<Integer, Map<String, Long>> bands = new TreeMap<>();
         Set<String> ores = new HashSet<>();
+        Map<String, String> families = new HashMap<>();
         Map<BlockState, String> names = new HashMap<>();
         int loaded = 0;
         // Export only: exact count per block and Y (the palette gives sections, so those holding a
@@ -174,7 +184,7 @@ public final class Census {
                     Map<String, Long> band = bands.computeIfAbsent(sectionY, k -> new HashMap<>());
                     boolean[] any = {false};
                     sections[i].getStates().count((state, n) -> {
-                        String name = names.computeIfAbsent(state, s -> nameOf(s, extra, ores));
+                        String name = names.computeIfAbsent(state, s -> nameOf(s, extra, ores, families));
                         if (name.isEmpty()) return;
                         band.merge(name, (long) n, Long::sum);
                         chunkCounts.merge(name, (long) n, Long::sum);
@@ -205,11 +215,11 @@ public final class Census {
         List<Map.Entry<String, Long>> rankedOthers = sorted.stream().filter(e -> !ores.contains(e.getKey())).toList();
         long oreTotal = rankedOres.stream().mapToLong(Map.Entry::getValue).sum();
         return new Scan(level, center, radius, loaded, (System.nanoTime() - start) / 1_000_000, bands, ores,
-                exactByY, chunkRows, unknown, total, rankedOres, rankedOthers, oreTotal);
+                exactByY, chunkRows, unknown, total, rankedOres, rankedOthers, oreTotal, families);
     }
 
     /** "" = not counted. Records the ore names: their share is reported against the total of all ores. */
-    private static String nameOf(BlockState state, Set<Block> extra, Set<String> ores) {
+    private static String nameOf(BlockState state, Set<Block> extra, Set<String> ores, Map<String, String> families) {
         boolean ore = state.is(Tags.Blocks.ORES);
         if (!ore && !state.is(Tags.Blocks.STORAGE_BLOCKS) && !extra.contains(state.getBlock())) return "";
         Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
@@ -217,7 +227,11 @@ public final class Census {
         // The deepslate variant counts with the stone one: it is the same ore at another depth.
         if (ore && path.startsWith("deepslate_")) path = path.substring("deepslate_".length());
         String name = id.getNamespace().equals("minecraft") ? path : id.getNamespace() + ":" + path;
-        if (ore) ores.add(name);
+        if (ore) {
+            ores.add(name);
+            String family = OreMatch.family(state.tags().map(t -> t.location().toString()).toList());
+            if (family != null) families.putIfAbsent(name, family);
+        }
         return name;
     }
 
@@ -227,19 +241,19 @@ public final class Census {
     private static boolean header(CommandSourceStack src, Scan s) {
         int all = s.side() * s.side();
         String dim = s.level().dimension().identifier().getPath();
-        if (!s.unknown().isEmpty()) send(src, "Ignored unknown ids in census.blocks: " + String.join(", ", s.unknown()));
+        if (!s.unknown().isEmpty()) send(src, t(src, "unknown_ids", String.join(", ", s.unknown())));
         if (s.loaded() == 0) {
-            send(src, "Census " + dim + ": no chunk loaded within " + s.radius() * 16 + " blocks. Walk around, or use a bigger radius.");
+            send(src, t(src, "no_chunks", dim, s.radius() * 16));
             return false;
         }
         if (s.rankedOres().isEmpty()) {
             // The End has none; a pack's Nether or a flat world may not either.
-            send(src, "Census " + dim + ": " + s.loaded() + "/" + all + " chunks, and no ore in them.");
+            send(src, t(src, "no_ore", dim, s.loaded(), all));
             return false;
         }
-        MutableComponent line = Component.literal("Census " + dim + ": " + s.loaded() + "/" + all + " chunks, "
-                + s.rankedOres().size() + " ores, " + fmt(s.oreTotal()) + " (" + perChunk(s.oreTotal(), s.loaded()) + "/chunk)");
-        if (s.loaded() < all) line.append(Component.literal("  only loaded chunks count").withStyle(ChatFormatting.GRAY));
+        MutableComponent line = Component.literal(t(src, "header", dim, s.loaded(), all, s.rankedOres().size(),
+                fmt(s.oreTotal()), perChunk(s.oreTotal(), s.loaded())));
+        if (s.loaded() < all) line.append(Component.literal("  " + t(src, "only_loaded")).withStyle(ChatFormatting.GRAY));
         src.sendSuccess(() -> line, false);
         return true;
     }
@@ -249,17 +263,17 @@ public final class Census {
         if (!header(src, s)) return 0;
         s.rankedOres().stream().limit(TOP).forEach(e -> line(src, e, s, radius));
         List<String> mods = modLines(s);
-        if (mods.size() > 1) send(src, "  mods: " + String.join(", ", mods.stream().limit(3).toList())
-                + (mods.size() > 3 ? ", +" + (mods.size() - 3) : ""));
+        if (mods.size() > 1) send(src, "  " + t(src, "mods", String.join(", ", mods.stream().limit(3).toList())
+                + (mods.size() > 3 ? ", +" + (mods.size() - 3) : "")));
         MutableComponent buttons = Component.literal("  ");
-        buttons.append(button("all " + s.rankedOres().size() + " ores", CMD + "list 1 " + radius, "Every ore, " + PAGE + " per page"));
+        buttons.append(button(t(src, "btn_all", s.rankedOres().size()), CMD + "list 1 " + radius, t(src, "tip_all", PAGE)));
         buttons.append(Component.literal(" "));
-        buttons.append(button("mods", CMD + "mod " + radius, "Ores per mod"));
+        buttons.append(button(t(src, "btn_mods"), CMD + "mod " + radius, t(src, "tip_mods")));
         buttons.append(Component.literal(" "));
-        buttons.append(button("heights", CMD + "y " + radius, "Where they are, by 64 blocks of height"));
+        buttons.append(button(t(src, "btn_heights"), CMD + "y " + radius, t(src, "tip_heights")));
         if (!export) {
             buttons.append(Component.literal(" "));
-            buttons.append(button("export", CMD + radius + " export", "A web page and two CSV files in config/oreveintweaker/census"));
+            buttons.append(button(t(src, "btn_export"), CMD + radius + " export", t(src, "tip_export")));
         }
         src.sendSuccess(() -> buttons, false);
         if (export) export(src, s);
@@ -275,9 +289,9 @@ public final class Census {
         int p = Math.min(page, pages);
         all.subList((p - 1) * PAGE, Math.min(all.size(), p * PAGE)).forEach(e -> line(src, e, s, radius));
         MutableComponent nav = Component.literal("  ");
-        if (p > 1) nav.append(button("< " + (p - 1), CMD + "list " + (p - 1) + " " + radius, "Previous page")).append(Component.literal(" "));
-        nav.append(Component.literal("page " + p + "/" + pages).withStyle(ChatFormatting.GRAY));
-        if (p < pages) nav.append(Component.literal(" ")).append(button((p + 1) + " >", CMD + "list " + (p + 1) + " " + radius, "Next page"));
+        if (p > 1) nav.append(button("< " + (p - 1), CMD + "list " + (p - 1) + " " + radius, t(src, "tip_prev"))).append(Component.literal(" "));
+        nav.append(Component.literal(t(src, "page_of", p, pages)).withStyle(ChatFormatting.GRAY));
+        if (p < pages) nav.append(Component.literal(" ")).append(button((p + 1) + " >", CMD + "list " + (p + 1) + " " + radius, t(src, "tip_next")));
         src.sendSuccess(() -> nav, false);
         return all.size();
     }
@@ -298,11 +312,11 @@ public final class Census {
             line.append(Component.literal("░".repeat(BAR - full)).withStyle(ChatFormatting.DARK_GRAY));
             line.append(Component.literal(String.format(Locale.ROOT, " %4.1f%% ", share)).withStyle(ChatFormatting.GRAY));
         } else {
-            line.append(Component.literal("  block  ").withStyle(ChatFormatting.GRAY));
+            line.append(Component.literal("  " + t(src, "block") + "  ").withStyle(ChatFormatting.GRAY));
         }
         line.append(Component.literal(name).withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)
                 .withClickEvent(new ClickEvent.RunCommand(CMD + "ore " + radius + " " + name))
-                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Where it is: height profile")))));
+                .withHoverEvent(new HoverEvent.ShowText(Component.literal(t(src, "tip_ore"))))));
         line.append(Component.literal("  " + fmt(e.getValue())).withStyle(ChatFormatting.GRAY));
         src.sendSuccess(() -> line, false);
     }
@@ -333,9 +347,9 @@ public final class Census {
                     .append(Component.literal("░".repeat(BAR - full)).withStyle(ChatFormatting.GRAY))
                     .append(Component.literal(String.format(Locale.ROOT, " %4.1f%% ", share)).withStyle(ChatFormatting.GRAY))
                     .append(Component.literal(e.getKey()).withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal("  " + e.getValue()[1] + (e.getValue()[1] == 1 ? " ore" : " ores")).withStyle(ChatFormatting.GRAY)), false);
+                    .append(Component.literal("  " + t(src, e.getValue()[1] == 1 ? "ore_one" : "ore_many", e.getValue()[1])).withStyle(ChatFormatting.GRAY)), false);
         });
-        if (sorted.size() > 8) send(src, "  +" + (sorted.size() - 8) + " more mods: see the export");
+        if (sorted.size() > 8) send(src, "  " + t(src, "more_mods", sorted.size() - 8));
         return sorted.size();
     }
 
@@ -365,25 +379,28 @@ public final class Census {
     private static int ore(CommandSourceStack src, int radius, String query) {
         Scan s = scan(src, radius, false);
         if (!header(src, s)) return 0;
-        String q = query.trim().toLowerCase(Locale.ROOT);
-        List<String> found = match(s.total().keySet(), q);
+        List<String> found = OreMatch.match(s.total().keySet(), query);
         if (found.isEmpty()) {
-            send(src, "No \"" + query + "\" among the " + s.total().size() + " blocks counted here.");
+            send(src, t(src, "none_found", query, s.total().size()));
             return 0;
         }
         if (found.size() > 1) {
-            MutableComponent some = Component.literal("  Which one? ");
+            MutableComponent some = Component.literal("  " + t(src, "which") + " ");
             found.stream().limit(6).forEach(n -> some.append(Component.literal(n + " ").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)
                     .withClickEvent(new ClickEvent.RunCommand(CMD + "ore " + radius + " " + n)))));
-            if (found.size() > 6) some.append(Component.literal("+" + (found.size() - 6) + " more: type more of the name").withStyle(ChatFormatting.GRAY));
+            if (found.size() > 6) some.append(Component.literal(t(src, "more_names", found.size() - 6)).withStyle(ChatFormatting.GRAY));
+            // The matches are also a group ("bituminous": every stone it comes in): their total is the answer.
+            OreMatch.Group group = OreMatch.group(found, s.ores(), s.total());
+            if (group.ores() > 1) send(src, "  " + t(src, "group_total", group.ores(), fmt(group.blocks()),
+                    perChunk(group.blocks(), s.loaded()), pct(group.blocks(), s.oreTotal())));
             src.sendSuccess(() -> some, false);
             return found.size();
         }
         String name = found.get(0);
         long count = s.total().get(name);
         boolean ore = s.ores().contains(name);
-        send(src, "  " + name + ": " + fmt(count) + " blocks, " + perChunk(count, s.loaded()) + "/chunk"
-                + (ore ? ", " + pct(count, s.oreTotal()) + " of ores" : ""));
+        send(src, "  " + (ore ? t(src, "ore_info_ore", name, fmt(count), perChunk(count, s.loaded()), pct(count, s.oreTotal()))
+                : t(src, "ore_info", name, fmt(count), perChunk(count, s.loaded()))));
         StringBuilder spark = new StringBuilder();
         long max = 0;
         int minSection = s.level().getMinSectionY(), maxSection = s.level().getMaxSectionY();
@@ -394,7 +411,7 @@ public final class Census {
             max = Math.max(max, per[sy - minSection]);
         }
         for (long v : per) spark.append(v == 0 ? '·' : LEVELS.charAt((int) Math.min(7, Math.round(7.0 * v / max))));
-        send(src, "  Y " + minSection * 16 + " " + spark + " " + (maxSection * 16 - 1) + "  (a mark = 16 blocks)");
+        send(src, "  " + t(src, "profile", minSection * 16, spark, maxSection * 16 - 1));
         long run = 0;
         int lo = -1, hi = -1;
         for (int i = 0; i < per.length; i++) {
@@ -402,15 +419,8 @@ public final class Census {
             if (lo < 0 && run * 4 >= count) lo = i;
             if (hi < 0 && run * 4 >= count * 3) hi = i;
         }
-        send(src, "  Half of it between Y " + (minSection + lo) * 16 + " and " + ((minSection + hi) * 16 + 15));
+        send(src, "  " + t(src, "half", (minSection + lo) * 16, (minSection + hi) * 16 + 15));
         return 1;
-    }
-
-    /** Exact id, then the part after the namespace, then anything containing the text: the first tier with a match. */
-    private static List<String> match(Set<String> names, String q) {
-        List<String> exact = names.stream().filter(n -> n.equalsIgnoreCase(q) || n.substring(n.indexOf(':') + 1).equalsIgnoreCase(q)).sorted().toList();
-        if (!exact.isEmpty()) return exact;
-        return names.stream().filter(n -> n.toLowerCase(Locale.ROOT).contains(q)).sorted().toList();
     }
 
     // ---------------------------------------------------------------- save, diff
@@ -430,10 +440,10 @@ public final class Census {
             Files.createDirectories(file.getParent());
             Files.writeString(file, out.toString());
         } catch (IOException e) {
-            send(src, "Save failed: " + e.getMessage());
+            send(src, t(src, "save_failed", e.getMessage()));
             return 0;
         }
-        send(src, "Saved \"" + name + "\". Later: /oreveintweaker census diff " + name);
+        send(src, t(src, "saved", name));
         return s.total().size();
     }
 
@@ -443,7 +453,7 @@ public final class Census {
         try {
             lines = Files.readAllLines(saveFile(name));
         } catch (IOException e) {
-            send(src, "No saved census called \"" + name + "\": run /oreveintweaker census save " + name + " first.");
+            send(src, t(src, "no_saved", name));
             return 0;
         }
         double before = Double.parseDouble(lines.get(0).substring("loaded,".length()));
@@ -451,8 +461,7 @@ public final class Census {
         if (lines.size() > 1 && lines.get(1).startsWith("dimension,")) {
             String saved = lines.get(1).substring("dimension,".length());
             if (!saved.equals(s.level().dimension().identifier().toString())) {
-                send(src, "\"" + name + "\" was saved in " + saved + ", you are in " + s.level().dimension().identifier()
-                        + ": go there, or save another one here.");
+                send(src, t(src, "wrong_dim", name, saved, s.level().dimension().identifier()));
                 return 0;
             }
             from = 2;
@@ -471,16 +480,16 @@ public final class Census {
         List<String> changed = names.stream().filter(n -> !same(old.getOrDefault(n, 0.0), now.getOrDefault(n, 0.0)))
                 .sorted((a, b) -> Double.compare(Math.abs(now.getOrDefault(b, 0.0) - old.getOrDefault(b, 0.0)),
                         Math.abs(now.getOrDefault(a, 0.0) - old.getOrDefault(a, 0.0)))).toList();
-        send(src, "Compared with \"" + name + "\" (" + (int) before + " chunks then), per chunk:");
-        if (changed.isEmpty()) send(src, "  Nothing changed (" + names.size() + " unchanged).");
+        send(src, t(src, "compared", name, (int) before));
+        if (changed.isEmpty()) send(src, "  " + t(src, "unchanged_all", names.size()));
         changed.stream().limit(7).forEach(n -> {
             double was = old.getOrDefault(n, 0.0), is = now.getOrDefault(n, 0.0);
-            String change = was == 0 ? "new" : String.format(Locale.ROOT, "%+.0f%%", 100 * (is - was) / was);
+            String change = was == 0 ? t(src, "is_new") : String.format(Locale.ROOT, "%+.0f%%", 100 * (is - was) / was);
             src.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  %s  %.1f -> %.1f  %s", n, was, is, change))
                     .withStyle(is > was ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         });
-        if (changed.size() > 7) send(src, "  +" + (changed.size() - 7) + " more changed");
-        if (!changed.isEmpty() && names.size() > changed.size()) send(src, "  " + (names.size() - changed.size()) + " unchanged");
+        if (changed.size() > 7) send(src, "  " + t(src, "more_changed", changed.size() - 7));
+        if (!changed.isEmpty() && names.size() > changed.size()) send(src, "  " + t(src, "unchanged", names.size() - changed.size()));
         return changed.size();
     }
 
@@ -528,16 +537,17 @@ public final class Census {
                     + "\nradius: " + s.radius() + " chunks\nchunks counted: " + s.loaded() + "\ndate: " + stamp + "\n");
             Files.writeString(page, html(s, stamp), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            send(src, "Export failed: " + e.getMessage());
+            send(src, t(src, "export_failed", e.getMessage()));
             return;
         }
         String where = page.toAbsolutePath().toString();
-        MutableComponent done = Component.literal("  Exported in " + s.millis() + " ms: ");
-        done.append(button("open", CMD + "open " + page.getFileName(), "Open the page in your browser")).append(Component.literal(" "));
-        done.append(button("copy the page's path", where, "", true));
+        String copy = t(src, "tip_copy");
+        MutableComponent done = Component.literal("  " + t(src, "exported", s.millis()) + " ");
+        done.append(button(t(src, "btn_open"), CMD + "open " + page.getFileName(), t(src, "tip_open"))).append(Component.literal(" "));
+        done.append(button(t(src, "btn_path"), where, copy, true));
         // A chat line carries at most about 256 KB of text.
         if (byY.length() <= 200_000) {
-            done.append(Component.literal(" ")).append(button("copy the height table", byY.toString(), "", true));
+            done.append(Component.literal(" ")).append(button(t(src, "btn_table"), byY.toString(), copy, true));
         }
         src.sendSuccess(() -> done, false);
         send(src, "  " + dir.toAbsolutePath());
@@ -550,11 +560,11 @@ public final class Census {
     private static int open(CommandSourceStack src, String name) {
         Path page = VeinFiles.dir().resolveSibling("census").resolve(name);
         if (!name.endsWith(".html") || !Files.isRegularFile(page)) {
-            send(src, "No such page in config/oreveintweaker/census.");
+            send(src, t(src, "no_page"));
             return 0;
         }
         if (src.getServer().isDedicatedServer()) {
-            send(src, "This server is not your computer: open " + page.toAbsolutePath() + " there.");
+            send(src, t(src, "not_local", page.toAbsolutePath()));
             return 0;
         }
         Util.getPlatform().openFile(page.toFile());
@@ -576,6 +586,14 @@ public final class Census {
         root.addProperty("minY", s.level().getMinY());
         root.addProperty("height", s.level().getHeight());
         root.addProperty("date", stamp);
+        // Every language travels in the page: the browser knows the reader's language, the server only the player's.
+        JsonObject i18n = new JsonObject();
+        for (String code : Lang.CODES) {
+            JsonObject texts = new JsonObject();
+            Lang.page(code).forEach(texts::addProperty);
+            i18n.add(code, texts);
+        }
+        root.add("i18n", i18n);
 
         boolean grids = (long) s.side() * s.side() * s.total().size() <= 400_000; // a big radius would make a heavy page
         Map<String, int[]> gridOf = new HashMap<>();
@@ -595,6 +613,8 @@ public final class Census {
             o.addProperty("mod", modOf(e.getKey()));
             o.addProperty("ore", s.ores().contains(e.getKey()));
             o.addProperty("total", e.getValue());
+            String family = s.families().get(e.getKey());
+            if (family != null) o.addProperty("fam", family);
             long[] y = s.exactByY().get(e.getKey());
             if (y != null) {
                 int first = 0, last = y.length - 1;
@@ -640,7 +660,7 @@ public final class Census {
         ClickEvent click = copy ? new ClickEvent.CopyToClipboard(value)
                 : new ClickEvent.RunCommand(value);
         return Component.literal("[" + label + "]").withStyle(Style.EMPTY.withColor(ChatFormatting.AQUA).withUnderlined(true)
-                .withClickEvent(click).withHoverEvent(new HoverEvent.ShowText(Component.literal(copy ? "Copy to the clipboard" : hover))));
+                .withClickEvent(click).withHoverEvent(new HoverEvent.ShowText(Component.literal(hover))));
     }
 
     /**

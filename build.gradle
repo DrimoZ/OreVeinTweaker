@@ -63,3 +63,16 @@ tasks.named('jar', Jar) {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+// Plain JUnit, for the code that has no Minecraft class in it (Lang, OreMatch): `gradlew test`.
+repositories {
+    mavenCentral()
+}
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+}
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging { events 'failed'; exceptionFormat = 'full' }
+}

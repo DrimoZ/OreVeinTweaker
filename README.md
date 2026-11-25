@@ -302,7 +302,9 @@ several mods, a line `mods: minecraft 64%, create 13%, ...` sits above the butto
 | `census save <name>` / `census diff <name>` | compare two configs, below |
 
 Clicking an ore's name in the chat runs `census ore` for it. `<name>` is the id with or without the
-mod (`zinc_ore`, `create:zinc_ore`) or part of it (`zinc`); if several match, they are listed to click.
+mod (`zinc_ore`, `create:zinc_ore`) or part of it (`zinc`); if several match, they are listed to click,
+with their combined total and share (`census ore bituminous` adds up every stone it comes in). The
+exported page does the same: whatever you type in its search box, the line under it gives the total.
 
 ```
 > /oreveintweaker census y 4
@@ -337,6 +339,18 @@ mod (`zinc_ore`, `create:zinc_ore`) or part of it (`zinc`); if several match, th
   share, peak height and a height profile in each row; click a row for the exact count at each Y and a
   map of the chunks. A link ends with `#zinc_ore` to open on one ore. This is the tool for a pack with
   dozens of ores.
+  **Groups, without a command.** One ore often comes in several blocks (a dense variant, one per stone:
+  `..._bituminous_stone`, `..._bituminous_chert`...), so its real share is the sum. The **All ores /
+  Grouped** switch swaps the table between the full list and one row per group (click a group for its
+  profile and its members). Two kinds of group:
+  - **By tag, automatic**: ores that share the tag `#c:ores/<name>` (`#forge:ores/<name>` on Forge) are one
+    group, so `coal_ore` and a mod's dense coal ore become **Coal**. The tag is the pack author's own
+    statement that they are the same ore. Ores with no such tag stay on their own row.
+  - **Yours**: type `bituminous` in the search box (the line under it already gives the total of every
+    match), click **Group these ores** and name the group. They are kept in your browser, and the **x**
+    on a group removes it. Yours take priority over the tags.
+  The page and the chat are in English, French, Spanish, German, Portuguese, Russian and Chinese: the
+  page follows your browser (`?lang=fr` forces one), the chat follows the language of the game.
 - `...-by-height.csv`: one row per block height Y, one column per block, **exact to the block**. Ready
   for a chart.
 - `...-by-chunk.csv`: `chunk_x,chunk_z,block,count`, one row per block per chunk: the generation works
