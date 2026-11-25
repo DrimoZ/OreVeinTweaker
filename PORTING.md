@@ -26,7 +26,7 @@ What actually changed between branches is loader and vanilla API, never the logi
 | `/benchgen` (dev) | `net.minecraft.world.level.chunk.ChunkStatus` | `...chunk.status.ChunkStatus` | same as 1.21.1 |
 | Census and strip commands | `ResourceLocation.tryParse`, `getMinBuildHeight()`, `hasPermission(2)`, `new ChunkPos(pos)`, `center.x`, `dimension().location()` | same | `Identifier.tryParse`, `getMinY()`, `Commands.hasPermission(LEVEL_GAMEMASTERS)`, `ChunkPos.containing(pos)`, `center.x()`, `dimension().identifier()` |
 | Census export | `new ClickEvent(Action.COPY_TO_CLIPBOARD, text)` | same | `new ClickEvent.CopyToClipboard(text)` |
-| Census language (`Census.t`) | no `clientInformation()` before 1.20.2: find the player's language another way (not checked), else English | `player.clientInformation().language()` | `player.clientInformation().language()` |
+| Census language (`Census.t`), ore tags (`Census.nameOf`) | `player.getLanguage()` (a Forge patch), `state.getTags()` | `player.clientInformation().language()`, `state.getTags()` | `player.clientInformation().language()`, `state.tags()`, `TagKey.location()` |
 
 ## 26.3
 
